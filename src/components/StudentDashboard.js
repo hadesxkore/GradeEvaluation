@@ -16,10 +16,12 @@ import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
 import CustomizeAccount from './CustomizeAccount';
 
-const CourseTaken = () => <h2 className="text-2xl font-semibold mb-3">Course Taken</h2>;
-const CoursesEnrolled = () => <h2 className="text-2xl font-semibold mb-3">Courses Enrolled</h2>;
-const Residency = () => <h2 className="text-2xl font-semibold mb-3">Residency</h2>;
-const CurriculumList = () => <h2 className="text-2xl font-semibold mb-3">Curriculum List</h2>;
+import CourseTaken from './CourseTaken';
+import CoursesEnrolled from './CoursesEnrolled';
+import Residency from './Residency';
+import CurriculumList from './CurriculumList';
+
+
 
 const StudentDashboard = () => {
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);

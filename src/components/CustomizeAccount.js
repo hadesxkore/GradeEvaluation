@@ -18,6 +18,7 @@ const CustomizeAccount = () => {
     contactNumber: '',
     program: '',
     profilePicture: '',
+    studentId: '', // Add studentId to the state
   });
   const [profilePictureFile, setProfilePictureFile] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -44,6 +45,8 @@ const CustomizeAccount = () => {
             contactNumber: userData.contactNumber || '',
             program: userData.program || '',
             profilePicture: userData.profilePicture || '',
+            studentId: userData.studentId || '', // Retrieve studentId from Firestore
+
           });
         }
       });
@@ -160,6 +163,12 @@ const CustomizeAccount = () => {
           >
             Choose Profile Picture
           </button>
+          <div className="mt-4 bg-white p-4 rounded-lg shadow-lg transition-transform transform hover:scale-105 w-full max-w-md flex flex-col items-center justify-center">
+  <p className="text-sm font-medium text-gray-600">Student ID</p>
+  <p className="text-2xl font-bold text-blue-700">{userData.studentId}</p>
+</div>
+
+
         </div>
 
         <div className="flex flex-col gap-4 w-full md:w-2/3">
