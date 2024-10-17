@@ -30,6 +30,7 @@ const StudentDashboard = () => {
   const [isStudent, setIsStudent] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [firstName, setFirstName] = useState('Student');
+  const [profilePictureUrl, setProfilePictureUrl] = useState(''); // New state for profile picture
   const navigate = useNavigate();
   const auth = getAuth();
   const db = getFirestore();
@@ -45,6 +46,7 @@ const StudentDashboard = () => {
           if (userData.role === 'Student') {
             setIsStudent(true);
             setFirstName(userData.firstName || 'Student');
+            setProfilePictureUrl(userData.profilePicture || ''); // Set profile picture URL
           } else {
             setIsStudent(false);
             navigate('/unauthorized');
@@ -84,21 +86,21 @@ const StudentDashboard = () => {
   return (
 <div className="flex flex-col md:flex-row min-h-screen bg-white/90 backdrop-blur-md shadow-lg border border-white/50">
 <aside className="md:w-72 bg-white border-r shadow-md md:h-screen md:flex md:flex-col">
-        <div className="p-5">
-          <h2 className="text-2xl font-bold text-center text-blue-600">Student Dashboard</h2>
-          <p className="text-center text-gray-500 mt-2">Welcome, {firstName}!</p>
-        </div>
+<div className="p-5">
+    <h2 className="text-2xl font-bold text-center text-blue-600">Student Dashboard</h2>
+    <div className="flex justify-center mt-4">
+    <img
+              src={profilePictureUrl} // Now this is defined
+              alt="Profile"
+              className="w-24 h-24 rounded-full "
+            />
+    </div>
+    <p className="text-center text-gray-500 mt-2">Welcome, {firstName}!</p>
+</div>
+
         <nav className="mt-5 flex-grow">
           <ul className="space-y-2">
-            <li>
-              <Link
-                to="/student-dashboard/customize-account"
-                className="flex items-center px-4 py-2 text-gray-700 hover:bg-blue-500 hover:text-white transition-colors rounded-md"
-              >
-                <HiOutlineCog className="mr-2 text-xl" />
-                Customize Account
-              </Link>
-            </li>
+           
             <li>
               <button
                 onClick={toggleProfileDropdown}
@@ -166,6 +168,15 @@ const StudentDashboard = () => {
                   </li>
                 </ul>
               )}
+            </li>
+            <li>
+              <Link
+                to="/student-dashboard/customize-account"
+                className="flex items-center px-4 py-2 text-gray-700 hover:bg-blue-500 hover:text-white transition-colors rounded-md"
+              >
+                <HiOutlineCog className="mr-2 text-xl" />
+                Customize Account
+              </Link>
             </li>
           </ul>
         </nav>
