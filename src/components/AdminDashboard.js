@@ -1,40 +1,13 @@
 // src/components/AdminDashboard.js
 import React from 'react';
 import { Link, Routes, Route } from 'react-router-dom';
-import { HiOutlineUsers, HiOutlineClipboardList, HiOutlineCog, HiOutlineSupport } from 'react-icons/hi';
+import { HiOutlineUserAdd, HiOutlineAdjustments, HiOutlineClipboardList, HiOutlineCog } from 'react-icons/hi';
 
-// Placeholder components for each feature
-const DataManagement = () => (
-  <div>
-    <h2 className="text-2xl font-semibold mb-3">Data Management</h2>
-    <p>Tools for managing student records, faculty information, and course data.</p>
-    <p>Access control to ensure only authorized personnel can modify sensitive information.</p>
-  </div>
-);
-
-const ReportingAnalytics = () => (
-  <div>
-    <h2 className="text-2xl font-semibold mb-3">Reporting and Analytics</h2>
-    <p>Generate comprehensive reports on student performance, course enrollments, and faculty evaluations.</p>
-    <p>Visual dashboards to monitor overall system health and user engagement.</p>
-  </div>
-);
-
-const SystemConfiguration = () => (
-  <div>
-    <h2 className="text-2xl font-semibold mb-3">System Configuration</h2>
-    <p>Ability to configure system settings, manage user roles, and control access levels.</p>
-    <p>Integration with external systems for data import/export.</p>
-  </div>
-);
-
-const UserSupport = () => (
-  <div>
-    <h2 className="text-2xl font-semibold mb-3">User Support</h2>
-    <p>Tools for managing user support requests and feedback.</p>
-    <p>Comprehensive logs for system usage and issues to inform future enhancements.</p>
-  </div>
-);
+// Import the components from their respective files
+import CreateEvaluatorAccount from './CreateEvaluatorAccount';
+import ContentCustomization from './ContentCustomization';
+import Reports from './Reports';
+import SystemSettings from './SystemSettings';
 
 const AdminDashboard = () => {
   return (
@@ -48,38 +21,38 @@ const AdminDashboard = () => {
           <ul className="space-y-2">
             <li>
               <Link
-                to="/admin-dashboard/data-management"
+                to="/admin-dashboard/create-evaluator-account"
                 className="flex items-center px-4 py-2 text-gray-700 hover:bg-red-500 hover:text-white transition-colors rounded-md"
               >
-                <HiOutlineUsers className="mr-2 text-xl" />
-                Data Management
+                <HiOutlineUserAdd className="mr-2 text-xl" />
+                Create Evaluator Account
               </Link>
             </li>
             <li>
               <Link
-                to="/admin-dashboard/reports-analytics"
+                to="/admin-dashboard/content-customization"
+                className="flex items-center px-4 py-2 text-gray-700 hover:bg-red-500 hover:text-white transition-colors rounded-md"
+              >
+                <HiOutlineAdjustments className="mr-2 text-xl" />
+                Content Customization
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/admin-dashboard/reports"
                 className="flex items-center px-4 py-2 text-gray-700 hover:bg-red-500 hover:text-white transition-colors rounded-md"
               >
                 <HiOutlineClipboardList className="mr-2 text-xl" />
-                Reporting and Analytics
+                Reports
               </Link>
             </li>
             <li>
               <Link
-                to="/admin-dashboard/system-configuration"
+                to="/admin-dashboard/system-settings"
                 className="flex items-center px-4 py-2 text-gray-700 hover:bg-red-500 hover:text-white transition-colors rounded-md"
               >
                 <HiOutlineCog className="mr-2 text-xl" />
-                System Configuration
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/admin-dashboard/user-support"
-                className="flex items-center px-4 py-2 text-gray-700 hover:bg-red-500 hover:text-white transition-colors rounded-md"
-              >
-                <HiOutlineSupport className="mr-2 text-xl" />
-                User Support
+                System Settings
               </Link>
             </li>
           </ul>
@@ -89,14 +62,14 @@ const AdminDashboard = () => {
       {/* Main Content */}
       <main className="flex-1 p-5">
         <Routes>
-          <Route path="/data-management" element={<DataManagement />} />
-          <Route path="/reports-analytics" element={<ReportingAnalytics />} />
-          <Route path="/system-configuration" element={<SystemConfiguration />} />
-          <Route path="/user-support" element={<UserSupport />} />
+          <Route path="/create-evaluator-account" element={<CreateEvaluatorAccount />} />
+          <Route path="/content-customization" element={<ContentCustomization />} />
+          <Route path="/reports" element={<Reports />} />
+          <Route path="/system-settings" element={<SystemSettings />} />
           <Route path="/" element={
             <div className="max-w-2xl mx-auto bg-white p-5 border rounded-lg shadow-lg">
               <h1 className="text-3xl font-bold mb-5 text-center text-red-600">Welcome, Admin!</h1>
-              <p className="text-center mb-5 text-gray-600">Here you can manage data, view reports, configure system settings, and provide user support.</p>
+              <p className="text-center mb-5 text-gray-600">Use this dashboard to manage evaluator accounts, customize system content, generate reports, and adjust system settings.</p>
             </div>
           } />
         </Routes>
