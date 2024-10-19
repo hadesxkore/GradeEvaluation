@@ -34,6 +34,7 @@ const [sectionName, setSectionName] = useState(''); // New state for section nam
 const [editingStudentId, setEditingStudentId] = useState(null); // Track which student is being edited
 const [editedStudentData, setEditedStudentData] = useState({}); // Store edited data
 const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+const [searchTerm, setSearchTerm] = useState("");
 
   const [students, setStudents] = useState([]); // State to hold student data
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false); // State for student modal
@@ -312,6 +313,7 @@ const handleUpdateStudentDetails = async () => {
   return (
     <div className="p-5">
       {/* Main Card for Section Management */}
+      
       <div className="bg-white rounded-lg shadow-md p-5 mb-4">
         <h2 className="text-2xl font-semibold mb-3">Section Management</h2>
         <p className="mb-4 text-gray-700">
@@ -663,15 +665,27 @@ const handleUpdateStudentDetails = async () => {
 )}
 
 
-
-  {/* Student List Modal */}
+{/* Student List Modal */}
 {showStudents && (
   <div className="bg-white shadow-md rounded-lg overflow-hidden mt-4">
-    <h2 className="text-2xl font-semibold mb-4 mt-4 ml-4">Students Information</h2>
+    <div className="flex items-center justify-between px-4">
+      <h2 className="text-2xl font-semibold mb-4 mt-4">Students Information</h2>
+      {/* Search Input */}
+      <div className="flex items-center">
+        <input
+          type="text"
+          placeholder="Search by Name or Student ID"
+          className="border border-gray-300 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-teal-500"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
+    </div>
+    
     <div className="overflow-x-auto">
-      <div className="max-h-100 overflow-y-auto">
+      <div className={`overflow-y-auto ${students.length >= 5 ? 'max-h-96' : ''}`}>
         <table className="min-w-full border-collapse border border-gray-300">
-          <thead className="bg-teal-600 text-white">
+          <thead className="bg-teal-600 text-white sticky top-0">
             <tr>
               <th className="py-3 px-4">First Name</th>
               <th className="py-3 px-4">Middle Name</th>
@@ -685,100 +699,144 @@ const handleUpdateStudentDetails = async () => {
             </tr>
           </thead>
           <tbody className="bg-white">
-            {students.length > 0 ? (
-              students.map((student) => (
-                <tr key={student.studentId} className="border-b hover:bg-gray-50 transition duration-150 ease-in-out">
-                  <td className="py-2 px-4 text-center">{student.firstName}</td>
-                  <td className="py-2 px-4 text-center">{student.middleName || 'N/A'}</td>
-                  <td className="py-2 px-4 text-center">{student.lastName}</td>
-                  <td className="py-2 px-4 text-center">{student.email}</td>
-                  <td className="py-2 px-4 text-center">{student.contactNumber}</td>
-                  <td className="py-2 px-4 text-center">{student.program}</td>
-                  <td className="py-2 px-4 text-center">{student.studentId}</td>
-                  <td className="py-2 px-4 text-center">{student.address}</td>
-                  <td className="py-2 px-4 text-center">
-                  <td className="py-2 px-4 text-center">
-  <button
-    className="bg-blue-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-600 transition duration-200"
-    onClick={() => handleViewStudentDetails(student)}
-  >
-    Edit
-  </button>
-</td>
-
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="9" className="py-2 px-4 text-center text-gray-500">No students found.</td>
-              </tr>
-            )}
-          </tbody>
+  {students.length > 0 ? (
+    students
+      .filter(student => 
+        (student.firstName && student.firstName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (student.studentId && student.studentId.toLowerCase().includes(searchTerm.toLowerCase())) || (student.email && student.email.toLowerCase().includes(searchTerm.toLowerCase()))
+      )
+      .map((student) => (
+        <tr key={student.studentId} className="border-b hover:bg-gray-50 transition duration-150 ease-in-out">
+          <td className="py-2 px-4 text-center">{student.firstName}</td>
+          <td className="py-2 px-4 text-center">{student.middleName || 'N/A'}</td>
+          <td className="py-2 px-4 text-center">{student.lastName}</td>
+          <td className="py-2 px-4 text-center">{student.email}</td>
+          <td className="py-2 px-4 text-center">{student.contactNumber}</td>
+          <td className="py-2 px-4 text-center">{student.program}</td>
+          <td className="py-2 px-4 text-center">{student.studentId}</td>
+          <td className="py-2 px-4 text-center">{student.address}</td>
+          <td className="py-2 px-4 text-center">
+            <button
+              className="bg-blue-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-600 transition duration-200"
+              onClick={() => handleViewStudentDetails(student)}
+            >
+              Edit
+            </button>
+          </td>
+        </tr>
+      ))
+  ) : (
+    <tr>
+      <td colSpan="9" className="py-2 px-4 text-center text-gray-500">No students found.</td>
+    </tr>
+  )}
+</tbody>
         </table>
       </div>
     </div>
   </div>
 )}
 
+
+
 {/* Modal for editing student info */}
 {isStudentDetailsModalOpen && selectedStudent && (
-  <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center">
-    <div className="bg-white p-6 rounded-lg shadow-lg">
-      <h3 className="text-xl font-semibold mb-4">Edit Student Information</h3>
-      <form>
-        <input
-          type="text"
-          value={selectedStudent.firstName}
-          onChange={(e) => setSelectedStudent({ ...selectedStudent, firstName: e.target.value })}
-          className="w-full mb-2 p-2 border rounded"
-        />
-        <input
-          type="text"
-          value={selectedStudent.middleName}
-          onChange={(e) => setSelectedStudent({ ...selectedStudent, middleName: e.target.value })}
-          className="w-full mb-2 p-2 border rounded"
-        />
-        <input
-          type="text"
-          value={selectedStudent.lastName}
-          onChange={(e) => setSelectedStudent({ ...selectedStudent, lastName: e.target.value })}
-          className="w-full mb-2 p-2 border rounded"
-        />
-        <input
-          type="email"
-          value={selectedStudent.email}
-          onChange={(e) => setSelectedStudent({ ...selectedStudent, email: e.target.value })}
-          className="w-full mb-2 p-2 border rounded"
-        />
-        <input
-          type="text"
-          value={selectedStudent.contactNumber}
-          onChange={(e) => setSelectedStudent({ ...selectedStudent, contactNumber: e.target.value })}
-          className="w-full mb-2 p-2 border rounded"
-        />
-        <input
-          type="text"
-          value={selectedStudent.program}
-          onChange={(e) => setSelectedStudent({ ...selectedStudent, program: e.target.value })}
-          className="w-full mb-2 p-2 border rounded"
-        />
-        <input
-          type="text"
-          value={selectedStudent.address}
-          onChange={(e) => setSelectedStudent({ ...selectedStudent, address: e.target.value })}
-          className="w-full mb-2 p-2 border rounded"
-        />
-        <button type="button" onClick={handleUpdateStudentDetails} className="bg-blue-500 text-white px-4 py-2 rounded">
-          Update
-        </button>
-        <button type="button" onClick={() => setIsStudentDetailsModalOpen(false)} className="bg-gray-500 text-white px-4 py-2 rounded ml-2">
-          Cancel
-        </button>
+  <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex justify-center items-center">
+    <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-lg">
+      <h3 className="text-3xl font-semibold mb-6 text-center text-gray-800">Edit Student Information</h3>
+      <form className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <div>
+          <label className="block mb-2 font-medium text-gray-800 text-lg">First Name</label>
+          <input
+            type="text"
+            value={selectedStudent.firstName}
+            onChange={(e) => setSelectedStudent({ ...selectedStudent, firstName: e.target.value })}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-600"
+            placeholder="Enter First Name"
+          />
+        </div>
+        
+        <div>
+          <label className="block mb-2 font-medium text-gray-800 text-lg">Middle Name</label>
+          <input
+            type="text"
+            value={selectedStudent.middleName}
+            onChange={(e) => setSelectedStudent({ ...selectedStudent, middleName: e.target.value })}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-600"
+            placeholder="Enter Middle Name"
+          />
+        </div>
+        
+        <div>
+          <label className="block mb-2 font-medium text-gray-800 text-lg">Last Name</label>
+          <input
+            type="text"
+            value={selectedStudent.lastName}
+            onChange={(e) => setSelectedStudent({ ...selectedStudent, lastName: e.target.value })}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-600"
+            placeholder="Enter Last Name"
+          />
+        </div>
+        
+        <div>
+          <label className="block mb-2 font-medium text-gray-800 text-lg">Email</label>
+          <input
+            type="email"
+            value={selectedStudent.email}
+            onChange={(e) => setSelectedStudent({ ...selectedStudent, email: e.target.value })}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-600"
+            placeholder="Enter Email"
+          />
+        </div>
+        
+        <div>
+          <label className="block mb-2 font-medium text-gray-800 text-lg">Contact Number</label>
+          <input
+            type="text"
+            value={selectedStudent.contactNumber}
+            onChange={(e) => setSelectedStudent({ ...selectedStudent, contactNumber: e.target.value })}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-600"
+            placeholder="Enter Contact Number"
+          />
+        </div>
+        
+        <div>
+          <label className="block mb-2 font-medium text-gray-800 text-lg">Program</label>
+          <input
+            type="text"
+            value={selectedStudent.program}
+            onChange={(e) => setSelectedStudent({ ...selectedStudent, program: e.target.value })}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-600"
+            placeholder="Enter Program"
+          />
+        </div>
+        
+        <div>
+          <label className="block mb-2 font-medium text-gray-800 text-lg">Address</label>
+          <input
+            type="text"
+            value={selectedStudent.address}
+            onChange={(e) => setSelectedStudent({ ...selectedStudent, address: e.target.value })}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-600"
+            placeholder="Enter Address"
+          />
+        </div>
+
+        <div className="col-span-2 flex justify-end mt-6">
+          <button type="button" onClick={() => setIsStudentDetailsModalOpen(false)} className="bg-gray-500 text-white px-4 py-2 rounded-lg mr-2 text-lg">
+            Cancel
+          </button>
+          <button type="button" onClick={handleUpdateStudentDetails} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-lg">
+            Update
+          </button>
+        </div>
       </form>
     </div>
   </div>
 )}
+
+
 <Modal
   isOpen={isSuccessModalOpen}
   onRequestClose={() => setIsSuccessModalOpen(false)}
