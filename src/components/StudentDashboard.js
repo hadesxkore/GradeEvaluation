@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Modal from 'react-modal';
-import { Link, Route, Routes, useNavigate } from 'react-router-dom';
+import { Link, Route, Routes, useNavigate, useLocation } from 'react-router-dom';
 import {
   HiOutlineUser,
   HiOutlineCog,
@@ -84,40 +84,39 @@ const StudentDashboard = () => {
   }
 
   return (
-<div className="flex flex-col md:flex-row min-h-screen bg-white/90 backdrop-blur-md shadow-lg border border-white/50">
-<aside className="md:w-72 bg-white border-r shadow-md md:h-screen md:flex md:flex-col">
-<div className="p-5">
-    <h2 className="text-2xl font-bold text-center text-blue-600">Student Dashboard</h2>
-    <div className="flex justify-center mt-4">
-    <img
-              src={profilePictureUrl} // Now this is defined
+<div className="flex flex-col md:flex-row min-h-screen bg-gradient-to-b from-white to-gray-50">
+      <aside className="md:w-72 bg-white rounded-lg shadow-lg border border-gray-200 md:h-screen md:flex md:flex-col">
+        <div className="p-5 border-b border-gray-200">
+          <h2 className="text-2xl font-bold text-center text-blue-600">Student Dashboard</h2>
+          <div className="flex justify-center mt-4">
+            <img
+              src={profilePictureUrl}
               alt="Profile"
-              className="w-24 h-24 rounded-full "
+              className="w-28 h-28 rounded-full"
             />
-    </div>
-    <p className="text-center text-gray-500 mt-2">Welcome, {firstName}!</p>
-</div>
+          </div>
+          <p className="text-center text-gray-600 mt-2">Welcome, {firstName}!</p>
+        </div>
 
         <nav className="mt-5 flex-grow">
           <ul className="space-y-2">
-           
             <li>
               <button
                 onClick={toggleProfileDropdown}
-                className="flex items-center justify-between w-full px-4 py-2 text-gray-700 hover:bg-blue-500 hover:text-white transition-colors rounded-md"
+                className="flex items-center justify-between w-full px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
               >
                 <span className="flex items-center">
                   <HiOutlineUser className="mr-2 text-xl" />
                   Student Profile
                 </span>
-                <HiOutlineChevronDown className={`transform transition-transform ${isProfileDropdownOpen ? 'rotate-180' : 'rotate-0'}`} />
+                <HiOutlineChevronDown className={`transform transition-transform duration-200 ${isProfileDropdownOpen ? 'rotate-180' : 'rotate-0'}`} />
               </button>
               {isProfileDropdownOpen && (
                 <ul className="pl-6 mt-2 space-y-1">
                   <li>
                     <Link
                       to="/student-dashboard/course-taken"
-                      className="flex items-center px-4 py-2 text-gray-700 hover:bg-blue-500 hover:text-white transition-colors rounded-md"
+                      className="flex items-center px-4 py-2 text-gray-700 bg-white rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
                     >
                       <HiOutlineBookOpen className="mr-2 text-xl" />
                       Course Taken
@@ -126,7 +125,7 @@ const StudentDashboard = () => {
                   <li>
                     <Link
                       to="/student-dashboard/courses-enrolled"
-                      className="flex items-center px-4 py-2 text-gray-700 hover:bg-blue-500 hover:text-white transition-colors rounded-md"
+                      className="flex items-center px-4 py-2 text-gray-700 bg-white rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
                     >
                       <HiOutlineCollection className="mr-2 text-xl" />
                       Courses Enrolled
@@ -135,7 +134,7 @@ const StudentDashboard = () => {
                   <li>
                     <Link
                       to="/student-dashboard/residency"
-                      className="flex items-center px-4 py-2 text-gray-700 hover:bg-blue-500 hover:text-white transition-colors rounded-md"
+                      className="flex items-center px-4 py-2 text-gray-700 bg-white rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
                     >
                       <HiOutlineAcademicCap className="mr-2 text-xl" />
                       Residency
@@ -147,20 +146,20 @@ const StudentDashboard = () => {
             <li>
               <button
                 onClick={toggleGradesDropdown}
-                className="flex items-center justify-between w-full px-4 py-2 text-gray-700 hover:bg-blue-500 hover:text-white transition-colors rounded-md"
+                className="flex items-center justify-between w-full px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
               >
                 <span className="flex items-center">
                   <HiOutlineClipboardList className="mr-2 text-xl" />
                   View Grades
                 </span>
-                <HiOutlineChevronDown className={`transform transition-transform ${isGradesDropdownOpen ? 'rotate-180' : 'rotate-0'}`} />
+                <HiOutlineChevronDown className={`transform transition-transform duration-200 ${isGradesDropdownOpen ? 'rotate-180' : 'rotate-0'}`} />
               </button>
               {isGradesDropdownOpen && (
                 <ul className="pl-6 mt-2 space-y-1">
                   <li>
                     <Link
                       to="/student-dashboard/curriculum-list"
-                      className="flex items-center px-4 py-2 text-gray-700 hover:bg-blue-500 hover:text-white transition-colors rounded-md"
+                      className="flex items-center px-4 py-2 text-gray-700 bg-white rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
                     >
                       <HiOutlineBookOpen className="mr-2 text-xl" />
                       Curriculum List
@@ -172,7 +171,7 @@ const StudentDashboard = () => {
             <li>
               <Link
                 to="/student-dashboard/customize-account"
-                className="flex items-center px-4 py-2 text-gray-700 hover:bg-blue-500 hover:text-white transition-colors rounded-md"
+                className="flex items-center px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
               >
                 <HiOutlineCog className="mr-2 text-xl" />
                 Customize Account
@@ -181,13 +180,13 @@ const StudentDashboard = () => {
           </ul>
         </nav>
         <div className="p-5">
-          <button
-            onClick={openModal}
-            className="w-full flex items-center justify-center px-4 py-2 text-gray-700 bg-red-500 hover:bg-red-600 text-white rounded-md transition-colors"
-          >
-            <HiOutlineLogout className="mr-2 text-xl" />
-            Logout
-          </button>
+            <button
+              onClick={openModal}
+              className="w-full flex items-center justify-center px-4 py-3 text-white bg-red-500 rounded-lg shadow hover:bg-red-600 transition-colors duration-200"
+            >
+              <HiOutlineLogout className="mr-2 text-xl" />
+              Logout
+            </button>
         </div>
       </aside>
 

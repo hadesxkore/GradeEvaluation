@@ -1,9 +1,13 @@
 // src/components/CreateEvaluatorAccount.js
 import React, { useState, useEffect } from 'react';
-import { getFirestore, collection, addDoc, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, getDocs,  } from 'firebase/firestore';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth, db } from '../firebase'; // Update this to your Firebase configuration file
 import { HiPlus, HiEye, HiSearch, HiCheckCircle } from 'react-icons/hi';
 import Modal from 'react-modal';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore'; // Import doc and setDoc
+
 
 const CreateEvaluatorAccount = () => {
   const [showModal, setShowModal] = useState(false);
@@ -29,13 +33,12 @@ const CreateEvaluatorAccount = () => {
     fetchEvaluators();
   }, [firestore]);
 
+ 
   const fetchEvaluators = async () => {
     try {
-      const querySnapshot = await getDocs(collection(firestore, 'evaluators'));
-      const evaluatorsList = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      const querySnapshot = await getDocs(collection(firestore, 'evaluators')); // Changed from 'users' to 'evaluators'
+      const evaluatorsList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
       console.log('Fetched Evaluators:', evaluatorsList); // Debugging line
       setEvaluators(evaluatorsList);
       setFilteredEvaluators(evaluatorsList);
@@ -43,6 +46,7 @@ const CreateEvaluatorAccount = () => {
       console.error('Error fetching evaluators:', error);
     }
   };
+  
   
   useEffect(() => {
     const filtered = evaluators.filter(evaluator => {
@@ -61,36 +65,34 @@ const CreateEvaluatorAccount = () => {
     setError('');
     setSuccess('');
     try {
+      // Create the user account using Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      await addDoc(collection(firestore, 'evaluators'), {
-        uid: user.uid,
+      // Save evaluator's data directly into the 'evaluators' collection using UID as a document ID
+      await setDoc(doc(db, 'evaluators', user.uid), { // Changed 'users' to 'evaluators'
         firstName,
         middleName,
         lastName,
-        email,
+        email: user.email,
         contactNumber,
         address,
         birthdate,
         facultyId,
         createdAt: new Date(),
-        role: 'evaluator',
+        role: 'evaluator', // Assign role as 'evaluator'
       });
-      
-      console.log('Evaluator created:', { uid: user.uid, firstName, lastName }); // Debugging line
-      
+
+      console.log('Evaluator created:', { firstName, lastName });
 
       setSuccess('Evaluator account created successfully!');
       resetForm();
-      setShowModal(false);
       setShowSuccessModal(true); // Show success modal
       fetchEvaluators(); // Refresh the list after creating
     } catch (error) {
       setError('Error creating account: ' + error.message);
     }
   };
-
   const resetForm = () => {
     setEmail('');
     setPassword('');

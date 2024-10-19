@@ -8,12 +8,12 @@ const SignUp = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState('Student');
+  const [role, setRole] = useState('Student'); // Default to 'Student'
   const [studentId, setStudentId] = useState('');
-  const [facultyId, setFacultyId] = useState('');
   const [error, setError] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState('');
+  
   const navigate = useNavigate();
 
   const handlePasswordChange = (e) => {
@@ -43,14 +43,20 @@ const SignUp = () => {
   const handleSignUp = async (e) => {
     e.preventDefault();
     setError('');
+     // Validate email format
+     const emailPattern = /^[\w-\.]+@bpsu\.edu\.ph$/; // Regex to check email ends with @bpsu.edu.ph
+     if (!emailPattern.test(email)) {
+       setError('Please use your bpsu email account');
+       return; // Stop further execution
+     }
 
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
       return;
     }
 
-    if ((role === 'Student' && !studentId) || (role === 'Faculty' && !facultyId)) {
-      setError('Please provide a valid ID.');
+    if (!studentId) {
+      setError('Please provide a valid Student ID.');
       return;
     }
 
@@ -63,8 +69,7 @@ const SignUp = () => {
       await setDoc(doc(db, 'users', user.uid), {
         email: user.email,
         role: role,
-        studentId: role === 'Student' ? studentId : null,
-        facultyId: role === 'Faculty' ? facultyId : null,
+        studentId: studentId, // Only Student ID is stored
       });
 
       console.log('User signed up successfully:', user);
@@ -75,6 +80,7 @@ const SignUp = () => {
       setError(error.message);
       console.error('Error signing up:', error);
     }
+
   };
 
   const handleLogin = () => {
@@ -83,100 +89,90 @@ const SignUp = () => {
     navigate('/login');
   };
 
+
+
+   
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="max-w-md w-full p-5 border rounded-lg shadow-lg bg-white">
-        <h1 className="text-2xl font-bold mb-5 text-center">Sign Up</h1>
-        {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
-        <form onSubmit={handleSignUp}>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg"
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={handlePasswordChange}
-              className="w-full px-3 py-2 border rounded-lg"
-              required
-            />
-            {password && (
-              <p className={`text-sm mt-1 ${passwordStrength === 'Strong' ? 'text-green-600' : 'text-red-600'}`}>
-                Password Strength: {passwordStrength}
-              </p>
-            )}
-          </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">Confirm Password</label>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg"
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">Role</label>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg"
-            >
-              <option value="Student">Student</option>
-              <option value="Faculty">Faculty</option>
-              <option value="Admin">Admin</option>
-            </select>
-          </div>
-
-          {/* Conditional input for Student ID or Faculty ID */}
-          {role === 'Student' && (
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-1">Student ID</label>
-              <input
-                type="text"
-                value={studentId}
-                onChange={(e) => setStudentId(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg"
-                required
-              />
-            </div>
-          )}
-          {role === 'Faculty' && (
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-1">Faculty ID</label>
-              <input
-                type="text"
-                value={facultyId}
-                onChange={(e) => setFacultyId(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg"
-                required
-              />
-            </div>
-          )}
-
-          <button
-            type="submit"
-            className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors"
-          >
-            Sign Up
-          </button>
-        </form>
-
-        {/* Button for existing users */}
-        <div className="mt-4 text-center">
-          <p className="text-sm">Already have an account? 
-            <button onClick={() => navigate('/login')} className="text-blue-500 hover:underline"> Login</button>
-          </p>
+    <div className="max-w-md w-full p-5 border rounded-lg shadow-lg bg-white">
+      <h1 className="text-2xl font-bold mb-5 text-center">Sign Up</h1>
+      {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
+      <form onSubmit={handleSignUp}>
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-1">Email</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full px-3 py-2 border rounded-lg"
+            required
+          />
         </div>
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-1">Password</label>
+          <input
+            type="password"
+            value={password}
+            onChange={handlePasswordChange}
+            className="w-full px-3 py-2 border rounded-lg"
+            required
+          />
+          {password && (
+            <p className={`text-sm mt-1 ${passwordStrength === 'Strong' ? 'text-green-600' : 'text-red-600'}`}>
+              Password Strength: {passwordStrength}
+            </p>
+          )}
+        </div>
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-1">Confirm Password</label>
+          <input
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className="w-full px-3 py-2 border rounded-lg"
+            required
+          />
+        </div>
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-1">Role</label>
+          <input
+            type="text"
+            value="Student"
+            readOnly
+            className="w-full px-3 py-2 border rounded-lg bg-gray-200"
+          />
+        </div>
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-1">Student ID</label>
+          <input
+            type="text"
+            value={studentId}
+            onChange={(e) => setStudentId(e.target.value)}
+            className="w-full px-3 py-2 border rounded-lg"
+            required
+          />
+        </div>
+        <button
+        type="submit"
+        className="w-full bg-black text-white py-2 px-4 rounded-lg hover:bg-gray-800 transition-colors"
+      >
+        Sign Up
+      </button>
+      </form>
+      <div className="mt-4 text-center">
+      <p className="text-sm text-gray-600">
+        Already have an account?{' '}
+        <button
+          onClick={() => navigate('/login')}
+          className="text-blue-600 hover:underline font-semibold"
+        >
+          Login
+        </button>
+      </p>
+    </div>
+    
+
 
         {/* Modal */}
         {isModalOpen && (
