@@ -3,7 +3,7 @@ import React from 'react';
 import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
 
 import { Link, Routes, Route, useNavigate } from 'react-router-dom';
-import { HiOutlineUserAdd, HiOutlineAdjustments, HiOutlineClipboardList, HiOutlineCog, HiOutlineLogout, HiOutlineChevronDown, HiOutlineX } from 'react-icons/hi';
+import { HiOutlineUserAdd, HiOutlineAdjustments, HiOutlineClipboardList, HiOutlineCog, HiOutlineLogout, HiOutlineChevronDown, HiOutlineX, HiOutlinePlusCircle } from 'react-icons/hi';
 import { useState, useEffect } from 'react';
 import Modal from 'react-modal';
 
@@ -13,7 +13,7 @@ import ContentCustomization from './ContentCustomization';
 import Reports from './Reports';
 import SystemSettings from './SystemSettings';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
-
+import AdminAddSubject from './AdminAddSubject'; 
 
 
 
@@ -107,7 +107,15 @@ const AdminDashboard = () => {
                   Reports
                 </Link>
               </li>
-              
+              <li>
+          <Link
+            to="/admin-dashboard/admin-add-subject"
+            className="flex items-center px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-red-500 hover:text-white transition-colors duration-200"
+          >
+            <HiOutlinePlusCircle className="mr-2 text-xl" />
+            Add Subject
+          </Link>
+        </li>
               <li>
                 <Link
                   to="/admin-dashboard/system-settings"
@@ -135,6 +143,7 @@ const AdminDashboard = () => {
       <main className="flex-1 p-5">
         <Routes>
           <Route path="/create-evaluator-account" element={<CreateEvaluatorAccount />} />
+          <Route path="/admin-add-subject" element={<AdminAddSubject />} />
           <Route path="/content-customization" element={<ContentCustomization />} />
           <Route path="/reports" element={<Reports />} />
         
