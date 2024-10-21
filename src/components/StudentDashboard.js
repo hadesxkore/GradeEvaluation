@@ -16,10 +16,12 @@ import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
 import CustomizeAccount from './CustomizeAccount';
 
-import CourseTaken from './CourseTaken';
-import CoursesEnrolled from './CoursesEnrolled';
-import Residency from './Residency';
-import CurriculumList from './CurriculumList';
+
+import DownloadCourses from './DownloadCourses';
+import ManageCourses from './ManageCourses';
+import AnalyzeResidency from './AnalyzeResidency';
+import UploadGrades from './UploadGrades';
+
 
 
 
@@ -85,119 +87,126 @@ const StudentDashboard = () => {
 
   return (
 <div className="flex flex-col md:flex-row min-h-screen bg-gradient-to-b from-white to-gray-50">
-      <aside className="md:w-72 bg-white rounded-lg shadow-lg border border-gray-200 md:h-screen md:flex md:flex-col">
-        <div className="p-5 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-center text-blue-600">Student Dashboard</h2>
-          <div className="flex justify-center mt-4">
-            <img
-              src={profilePictureUrl}
-              alt="Profile"
-              className="w-28 h-28 rounded-full"
-            />
-          </div>
-          <p className="text-center text-gray-600 mt-2">Welcome, {firstName}!</p>
-        </div>
+<aside className="md:w-72 bg-white rounded-lg shadow-lg border border-gray-200 md:h-screen md:flex md:flex-col">
+  <div className="p-5 border-b border-gray-200">
+    <h2 className="text-2xl font-bold text-center text-blue-600">Student Dashboard</h2>
+    <div className="flex justify-center mt-4">
+      <img
+        src={profilePictureUrl}
+        alt="Profile"
+        className="w-28 h-28 rounded-full"
+      />
+    </div>
+    <p className="text-center text-gray-600 mt-2">Welcome, {firstName}!</p>
+  </div>
 
-        <nav className="mt-5 flex-grow">
-          <ul className="space-y-2">
+  <nav className="mt-5 flex-grow">
+    <ul className="space-y-2">
+      <li>
+        <Link
+          to="/student-dashboard/customize-account"
+          className="flex items-center px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
+        >
+          <HiOutlineCog className="mr-2 text-xl" />
+          Student Information
+        </Link>
+      </li>
+
+      {/* Curriculum List with Dropdown */}
+      <li>
+        <button
+          onClick={toggleProfileDropdown}
+          className="flex items-center justify-between w-full px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
+        >
+          <span className="flex items-center">
+            <HiOutlineClipboardList className="mr-2 text-xl" />
+            Curriculum List
+          </span>
+          <HiOutlineChevronDown className={`transform transition-transform duration-200 ${isProfileDropdownOpen ? 'rotate-180' : 'rotate-0'}`} />
+        </button>
+        {isProfileDropdownOpen && (
+          <ul className="pl-6 mt-2 space-y-1">
             <li>
-              <button
-                onClick={toggleProfileDropdown}
-                className="flex items-center justify-between w-full px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
+              <Link
+                to="/student-dashboard/manage-courses"
+                className="flex items-center px-4 py-2 text-gray-700 bg-white rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
               >
-                <span className="flex items-center">
-                  <HiOutlineUser className="mr-2 text-xl" />
-                  Student Profile
-                </span>
-                <HiOutlineChevronDown className={`transform transition-transform duration-200 ${isProfileDropdownOpen ? 'rotate-180' : 'rotate-0'}`} />
-              </button>
-              {isProfileDropdownOpen && (
-                <ul className="pl-6 mt-2 space-y-1">
-                  <li>
-                    <Link
-                      to="/student-dashboard/course-taken"
-                      className="flex items-center px-4 py-2 text-gray-700 bg-white rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
-                    >
-                      <HiOutlineBookOpen className="mr-2 text-xl" />
-                      Course Taken
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      to="/student-dashboard/courses-enrolled"
-                      className="flex items-center px-4 py-2 text-gray-700 bg-white rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
-                    >
-                      <HiOutlineCollection className="mr-2 text-xl" />
-                      Courses Enrolled
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      to="/student-dashboard/residency"
-                      className="flex items-center px-4 py-2 text-gray-700 bg-white rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
-                    >
-                      <HiOutlineAcademicCap className="mr-2 text-xl" />
-                      Residency
-                    </Link>
-                  </li>
-                </ul>
-              )}
-            </li>
-            <li>
-              <button
-                onClick={toggleGradesDropdown}
-                className="flex items-center justify-between w-full px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
-              >
-                <span className="flex items-center">
-                  <HiOutlineClipboardList className="mr-2 text-xl" />
-                  View Grades
-                </span>
-                <HiOutlineChevronDown className={`transform transition-transform duration-200 ${isGradesDropdownOpen ? 'rotate-180' : 'rotate-0'}`} />
-              </button>
-              {isGradesDropdownOpen && (
-                <ul className="pl-6 mt-2 space-y-1">
-                  <li>
-                    <Link
-                      to="/student-dashboard/curriculum-list"
-                      className="flex items-center px-4 py-2 text-gray-700 bg-white rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
-                    >
-                      <HiOutlineBookOpen className="mr-2 text-xl" />
-                      Curriculum List
-                    </Link>
-                  </li>
-                </ul>
-              )}
+                <HiOutlineBookOpen className="mr-2 text-xl" />
+                Manage Courses to Enroll
+              </Link>
             </li>
             <li>
               <Link
-                to="/student-dashboard/customize-account"
-                className="flex items-center px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
+                to="/student-dashboard/download-courses"
+                className="flex items-center px-4 py-2 text-gray-700 bg-white rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
               >
-                <HiOutlineCog className="mr-2 text-xl" />
-                Customize Account
+                <HiOutlineCollection className="mr-2 text-xl" />
+                Download Courses to Enroll
               </Link>
             </li>
           </ul>
-        </nav>
-        <div className="p-5">
-            <button
-              onClick={openModal}
-              className="w-full flex items-center justify-center px-4 py-3 text-white bg-red-500 rounded-lg shadow hover:bg-red-600 transition-colors duration-200"
-            >
-              <HiOutlineLogout className="mr-2 text-xl" />
-              Logout
-            </button>
-        </div>
-      </aside>
+        )}
+      </li>
+
+      {/* Analyze Residency */}
+      <li>
+        <Link
+          to="/student-dashboard/analyze-residency"
+          className="flex items-center px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
+        >
+          <HiOutlineAcademicCap className="mr-2 text-xl" />
+          Analyze Residency
+        </Link>
+      </li>
+
+      {/* Upload Student Grades with Dropdown */}
+      <li>
+        <button
+          onClick={toggleGradesDropdown}
+          className="flex items-center justify-between w-full px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
+        >
+          <span className="flex items-center">
+            <HiOutlineClipboardList className="mr-2 text-xl" />
+            Upload Student Grades
+          </span>
+          <HiOutlineChevronDown className={`transform transition-transform duration-200 ${isGradesDropdownOpen ? 'rotate-180' : 'rotate-0'}`} />
+        </button>
+        {isGradesDropdownOpen && (
+          <ul className="pl-6 mt-2 space-y-1">
+            <li>
+              <Link
+                to="/student-dashboard/upload-grades"
+                className="flex items-center px-4 py-2 text-gray-700 bg-white rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
+              >
+                <HiOutlineClipboardList className="mr-2 text-xl" />
+                Upload Grade
+              </Link>
+            </li>
+          </ul>
+        )}
+      </li>
+    </ul>
+  </nav>
+
+  <div className="p-5">
+    <button
+      onClick={openModal}
+      className="w-full flex items-center justify-center px-4 py-3 text-white bg-red-500 rounded-lg shadow hover:bg-red-600 transition-colors duration-200"
+    >
+      <HiOutlineLogout className="mr-2 text-xl" />
+      Logout
+    </button>
+  </div>
+</aside>
 
       {/* Main Content */}
       <main className="flex-1 p-5">
         <Routes>
           <Route path="customize-account" element={<CustomizeAccount />} />
-          <Route path="course-taken" element={<CourseTaken />} />
-          <Route path="courses-enrolled" element={<CoursesEnrolled />} />
-          <Route path="residency" element={<Residency />} />
-          <Route path="curriculum-list" element={<CurriculumList />} />
+          <Route path="manage-courses" element={<ManageCourses />} />
+          <Route path="download-courses" element={<DownloadCourses />} />
+          <Route path="analyze-residency" element={<AnalyzeResidency />} />
+          <Route path="upload-grades" element={<UploadGrades />} />
           <Route path="/" element={<div>Welcome to the Student Dashboard! Select an option from the sidebar.</div>} />
         </Routes>
       </main>

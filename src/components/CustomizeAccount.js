@@ -126,7 +126,7 @@ const CustomizeAccount = () => {
 
   return (
     <div className="bg-gray-100 p-6 rounded-lg shadow-lg max-w-5xl mx-auto mt-8">
-      <h2 className="text-3xl font-semibold mb-6 text-center">Customize Your Account</h2>
+      <h2 className="text-3xl font-semibold mb-6 text-center">Student Information</h2>
 
       {message && (
         <div className="mb-4 p-3 rounded text-white bg-green-500">

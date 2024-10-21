@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { HiEye, HiDownload, HiShare } from 'react-icons/hi';
 
 // Set the app element for accessibility
-const CoursesEnrolled = () => {
+const ManageCourses = () => {
     // Define state variables if needed
     const [courses, setCourses] = useState([]);
 
@@ -88,4 +88,4 @@ const CoursesEnrolled = () => {
     );
 };
 
-export default CoursesEnrolled;
+export default ManageCourses;

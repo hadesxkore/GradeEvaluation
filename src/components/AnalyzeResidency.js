@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { HiPlus, HiEye, HiPencil, HiTrash } from 'react-icons/hi';
 
 // Set the app element for accessibility
-const Residency = () => {
+const AnalyzeResidency = () => {
     // Define state variables if needed
     const [residencies, setResidencies] = useState([]);
 
@@ -108,4 +108,4 @@ const Residency = () => {
     );
 };
 
-export default Residency;
+export default AnalyzeResidency;
