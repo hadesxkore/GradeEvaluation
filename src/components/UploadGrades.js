@@ -5,6 +5,10 @@ import { doc, setDoc, collection, getDocs, writeBatch } from 'firebase/firestore
 import { v4 as uuidv4 } from 'uuid';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Modal from 'react-modal';
+import { Viewer } from '@react-pdf-viewer/core';
+import '@react-pdf-viewer/core/lib/styles/index.css';
+import '@react-pdf-viewer/default-layout/lib/styles/index.css';
+
 
 const UploadGrades = () => {
     const [showModal, setShowModal] = useState(false);
@@ -216,23 +220,22 @@ const UploadGrades = () => {
                     <li key={file.id} className="mb-3">
                         <span className="text-gray-700">{file.fileName}</span>
                         <div className="mt-2">
-                            {file.fileUrl.endsWith('.pdf') ? (
-                                <iframe
-                                    src={file.fileUrl}
-                                    className="w-full h-64 border border-gray-300 rounded"
-                                    title={file.fileName}
-                                />
-                            ) : (
-                                <a
-                                    href={file.fileUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center justify-center bg-red-600 text-white px-3 py-2 rounded hover:bg-red-700 transition duration-300"
-                                >
-                                    <span className="mr-1">View</span>
-                                    <HiEye className="h-4 w-4" />
-                                </a>
-                            )}
+                        {file.fileUrl.endsWith('.pdf') ? (
+    <div className="w-full h-64">
+        <Viewer fileUrl={file.fileUrl} />
+    </div>
+) : (
+    <a
+        href={file.fileUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center justify-center bg-red-600 text-white px-3 py-2 rounded hover:bg-red-700 transition duration-300"
+    >
+        <span className="mr-1">View</span>
+        <HiEye className="h-4 w-4" />
+    </a>
+)}
+
                         </div>
                     </li>
                 ))}
