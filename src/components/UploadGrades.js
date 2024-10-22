@@ -216,30 +216,32 @@ const UploadGrades = () => {
             </table>
             <h3 className="text-xl font-semibold mb-4 text-gray-800">Uploaded Files</h3>
             <ul className="mb-6">
-                {files.map((file) => (
-                    <li key={file.id} className="mb-3">
-                        <span className="text-gray-700">{file.fileName}</span>
-                        <div className="mt-2">
-                        {file.fileUrl.endsWith('.pdf') ? (
-    <div className="w-full h-64">
-        <Viewer fileUrl={file.fileUrl} />
-    </div>
-) : (
-    <a
-        href={file.fileUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center justify-center bg-red-600 text-white px-3 py-2 rounded hover:bg-red-700 transition duration-300"
-    >
-        <span className="mr-1">View</span>
-        <HiEye className="h-4 w-4" />
-    </a>
-)}
-
+    {files.map((file) => (
+        <li key={file.id} className="mb-3">
+            <div className="flex items-center justify-between">
+                <span className="text-gray-700">{file.fileName}</span>
+                <div className="ml-4">
+                    {file.fileUrl.endsWith('.pdf') ? (
+                        <div className="w-full h-64 mt-2">
+                            <Viewer fileUrl={file.fileUrl} />
                         </div>
-                    </li>
-                ))}
-            </ul>
+                    ) : (
+                        <a
+                            href={file.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-red-600 text-white px-3 py-2 rounded hover:bg-red-700 transition duration-300 flex items-center"
+                        >
+                            <span className="mr-1">View</span>
+                            <HiEye className="h-4 w-4" />
+                        </a>
+                    )}
+                </div>
+            </div>
+        </li>
+    ))}
+</ul>
+
             <button
                 className="mt-4 w-full bg-red-600 text-white px-4 py-2 rounded transition duration-300 hover:bg-red-700"
                 onClick={handleCloseModal}
