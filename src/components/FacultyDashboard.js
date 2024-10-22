@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
 import { HiOutlineDocumentText, HiOutlineUser, HiOutlineBriefcase, HiOutlineCog, 
-  HiOutlineFolder, HiChevronDown, HiOutlineLogout, HiOutlineDocumentAdd, HiOutlineFolderAdd, HiOutlineUserGroup, HiOutlineChevronDown, HiOutlineX } from 'react-icons/hi';
+  HiOutlineFolder, HiChevronDown, HiOutlineLogout, HiOutlineDocumentAdd, HiOutlineFolderAdd, HiOutlineX } from 'react-icons/hi';
   
 import Modal from 'react-modal';
 
@@ -18,7 +18,8 @@ import EditStudentProfile from './EditStudentProfile';
 const FacultyDashboard = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isEvaluator, setIsEvaluator] = useState(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isEvaluationDropdownOpen, setIsEvaluationDropdownOpen] = useState(false);
+  const [isManageCoursesDropdownOpen, setIsManageCoursesDropdownOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const navigate = useNavigate();
   const auth = getAuth();
@@ -46,9 +47,16 @@ const FacultyDashboard = () => {
     return null;
   }
 
-  const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
+  const toggleEvaluationDropdown = () => {
+    setIsEvaluationDropdownOpen(!isEvaluationDropdownOpen);
+    setIsManageCoursesDropdownOpen(false); // Close the other dropdown
+  };
 
- 
+  const toggleManageCoursesDropdown = () => {
+    setIsManageCoursesDropdownOpen(!isManageCoursesDropdownOpen);
+    setIsEvaluationDropdownOpen(false); // Close the other dropdown
+  };
+
   const handleLogout = () => {
     signOut(auth)
       .then(() => {
@@ -64,21 +72,35 @@ const FacultyDashboard = () => {
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
-          {/* Sidebar */}
-          <aside className="md:w-72 bg-white border-r border-gray-200 shadow-lg md:h-screen md:flex md:flex-col">
+      {/* Sidebar */}
+      <aside className="md:w-72 bg-white border-r border-gray-200 shadow-lg md:h-screen md:flex md:flex-col">
         <div className="p-5 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-center text-teal-600">Faculty Dashboard</h2>
         </div>
         <nav className="mt-5 flex-grow">
           <ul className="space-y-2">
             <li>
-              <Link
-                to="/faculty-dashboard/encode-grades"
-                className="flex items-center px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-teal-500 hover:text-white transition-colors duration-200"
+              <button
+                onClick={toggleEvaluationDropdown}
+                className="flex items-center w-full px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-teal-500 hover:text-white transition-colors duration-200"
               >
                 <HiOutlineDocumentText className="mr-2 text-xl" />
-                Encode Grades
-              </Link>
+                Evaluation
+                <HiChevronDown className={`ml-auto transform ${isEvaluationDropdownOpen ? 'rotate-180' : 'rotate-0'}`} />
+              </button>
+              {isEvaluationDropdownOpen && (
+                <ul className="mt-2 space-y-2 ml-6">
+                  <li>
+                    <Link
+                      to="/faculty-dashboard/encode-grades"
+                      className="flex items-center px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-teal-500 hover:text-white transition-colors duration-200"
+                    >
+                      <HiOutlineDocumentText className="mr-2 text-xl" />
+                      Encode Grades
+                    </Link>
+                  </li>
+                </ul>
+              )}
             </li>
             <li>
               <Link
@@ -91,14 +113,14 @@ const FacultyDashboard = () => {
             </li>
             <li>
               <button
-                onClick={toggleDropdown}
+                onClick={toggleManageCoursesDropdown}
                 className="flex items-center w-full px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-teal-500 hover:text-white transition-colors duration-200"
               >
                 <HiOutlineBriefcase className="mr-2 text-xl" />
                 Manage Courses
-                <HiChevronDown className={`ml-auto transform ${isDropdownOpen ? 'rotate-180' : 'rotate-0'}`} />
+                <HiChevronDown className={`ml-auto transform ${isManageCoursesDropdownOpen ? 'rotate-180' : 'rotate-0'}`} />
               </button>
-              {isDropdownOpen && (
+              {isManageCoursesDropdownOpen && (
                 <ul className="mt-2 space-y-2 ml-6">
                   <li>
                     <Link
@@ -130,10 +152,6 @@ const FacultyDashboard = () => {
                 View Evaluation Cert
               </Link>
             </li>
-        
-        <li>
-          
-        </li>
             <li>
               <Link
                 to="/faculty-dashboard/edit-student-profile"
@@ -156,7 +174,6 @@ const FacultyDashboard = () => {
         </div>
       </aside>
 
-
       {/* Main Content */}
       <main className="flex-1 p-5">
         <Routes>
@@ -178,36 +195,26 @@ const FacultyDashboard = () => {
         overlayClassName="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center"
         ariaHideApp={false}
       >
-        <div className="flex flex-col items-center">
-          <div className="bg-red-100 rounded-full p-3">
-            <HiOutlineLogout className="text-red-500 text-3xl" />
-          </div>
-          <h2 className="text-2xl font-semibold text-gray-800 mt-4">Confirm Logout</h2>
-          <p className="text-gray-600 mt-2">Are you sure you want to logout?</p>
+        <div className="absolute top-2 right-2">
+          <button onClick={closeModal}>
+            <HiOutlineX className="text-gray-600" />
+          </button>
         </div>
-        <div className="flex justify-center mt-6 space-x-4">
-        <button
-      onClick={closeModal}
-      className="px-5 py-2 bg-gradient-to-r from-gray-300 to-gray-400 text-gray-700 rounded-full shadow-md hover:from-gray-400 hover:to-gray-500 transition-colors flex items-center"
-    >
-      <HiOutlineChevronDown className="mr-2 text-lg" />
-      Cancel
-    </button>
-    <button
-      onClick={handleLogout}
-      className="px-5 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-full shadow-md hover:from-red-600 hover:to-red-700 transition-colors flex items-center"
-    >
-      <HiOutlineLogout className="mr-2 text-lg" />
-      Yes, Logout
-    </button>
-    
-  </div>
-        <button
-          onClick={closeModal}
-          className="absolute top-2 right-2 text-gray-600 hover:text-gray-800"
-        >
-          <HiOutlineX className="w-5 h-5" />
-        </button>
+        <h2 className="text-xl font-bold mb-4">Are you sure you want to log out?</h2>
+        <div className="flex justify-center">
+          <button
+            onClick={handleLogout}
+            className="bg-teal-500 text-white px-4 py-2 rounded-lg hover:bg-teal-600 transition-colors duration-200"
+          >
+            Yes
+          </button>
+          <button
+            onClick={closeModal}
+            className="ml-4 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors duration-200"
+          >
+            No
+          </button>
+        </div>
       </Modal>
     </div>
   );
