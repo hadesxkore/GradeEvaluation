@@ -213,17 +213,27 @@ const UploadGrades = () => {
             <h3 className="text-xl font-semibold mb-4 text-gray-800">Uploaded Files</h3>
             <ul className="mb-6">
                 {files.map((file) => (
-                    <li key={file.id} className="flex items-center justify-between mb-3">
+                    <li key={file.id} className="mb-3">
                         <span className="text-gray-700">{file.fileName}</span>
-                        <a
-                            href={file.fileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center justify-center bg-red-600 text-white px-3 py-2 rounded hover:bg-red-700 transition duration-300"
-                        >
-                            <span className="mr-1">Show</span>
-                            <HiEye className="h-4 w-4" /> {/* Using the HiEye icon */}
-                        </a>
+                        <div className="mt-2">
+                            {file.fileUrl.endsWith('.pdf') ? (
+                                <iframe
+                                    src={file.fileUrl}
+                                    className="w-full h-64 border border-gray-300 rounded"
+                                    title={file.fileName}
+                                />
+                            ) : (
+                                <a
+                                    href={file.fileUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center justify-center bg-red-600 text-white px-3 py-2 rounded hover:bg-red-700 transition duration-300"
+                                >
+                                    <span className="mr-1">View</span>
+                                    <HiEye className="h-4 w-4" />
+                                </a>
+                            )}
+                        </div>
                     </li>
                 ))}
             </ul>
@@ -236,6 +246,7 @@ const UploadGrades = () => {
         </div>
     </div>
 )}
+
 
 
            {/* Modal for selecting upload method */}
