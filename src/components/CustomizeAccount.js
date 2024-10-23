@@ -17,6 +17,7 @@ const CustomizeAccount = () => {
     address: '',
     contactNumber: '',
     program: '',
+    yearLevel:'',
     profilePicture: '',
     studentId: '', // Add studentId to the state
   });
@@ -44,6 +45,7 @@ const CustomizeAccount = () => {
             address: userData.address || '',
             contactNumber: userData.contactNumber || '',
             program: userData.program || '',
+            yearLevel: userData.yearLevel ||'',
             profilePicture: userData.profilePicture || '',
             studentId: userData.studentId || '', // Retrieve studentId from Firestore
 
@@ -105,6 +107,7 @@ const CustomizeAccount = () => {
         address: userData.address,
         contactNumber: userData.contactNumber,
         program: userData.program,
+        yearLevel: userData.yearLevel, // Add this line
         profilePicture: profilePictureUrl,
       });
 
@@ -125,7 +128,7 @@ const CustomizeAccount = () => {
   };
 
   return (
-    <div className="bg-gray-100 p-6 rounded-lg shadow-lg max-w-5xl mx-auto mt-8">
+    <div className="bg-gray-100 p-6 rounded-lg shadow-lg max-w-5xl mx-auto">
       <h2 className="text-3xl font-semibold mb-6 text-center">Student Information</h2>
 
       {message && (
@@ -218,6 +221,24 @@ const CustomizeAccount = () => {
               readOnly
             />
           </div>
+ {/* New Year Level Dropdown Field */}
+<div>
+  <label className="block text-gray-700 mb-2">Year Level</label>
+  <select
+    name="yearLevel"
+    value={userData.yearLevel}
+    onChange={handleInputChange}
+    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+    required
+  >
+    <option value="">Select Year Level</option>
+    <option value="1st year">1st Year</option>
+    <option value="2nd year">2nd Year</option>
+    <option value="3rd year">3rd Year</option>
+    <option value="4th year">4th Year</option>
+  </select>
+</div>
+
 
           <div>
             <label className="block text-gray-700 mb-2">Address</label>

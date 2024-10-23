@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Modal from 'react-modal';
-import { HiOutlineSave, HiOutlineXCircle, HiOutlineEye, HiPlus, HiOutlineX, HiCheckCircle  } from 'react-icons/hi';
+import { HiOutlineSave, HiOutlineXCircle, HiOutlineEye, HiPlus, HiOutlineX, HiCheckCircle, HiPencil, HiTrash  } from 'react-icons/hi';
 import { db } from '../firebase'; // Import the initialized Firestore
-import { collection, addDoc, getDocs } from 'firebase/firestore';
+import { collection, addDoc, getDocs, deleteDoc } from 'firebase/firestore';
 import { query, where } from 'firebase/firestore'; // Import query and where
 import { doc, setDoc, getDoc, updateDoc   } from 'firebase/firestore'; // Import necessary functions
 import AdminDashboard from './AdminDashboard';
@@ -35,7 +35,8 @@ const [editingStudentId, setEditingStudentId] = useState(null); // Track which s
 const [editedStudentData, setEditedStudentData] = useState({}); // Store edited data
 const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 const [searchTerm, setSearchTerm] = useState("");
-
+const [showDeleteModal, setShowDeleteModal] = useState(false);
+const [studentToDelete, setStudentToDelete] = useState(null);
   const [students, setStudents] = useState([]); // State to hold student data
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false); // State for student modal
   const [isSectionsModalOpen, setIsSectionsModalOpen] = useState(false); // State for sections modal
@@ -191,6 +192,7 @@ const handleEnrollStudent = async (sectionId, studentId) => {
         lastName: student.lastName, // Include student name
         middleName: student.middleName,
         contactNumber: student.contactNumber,
+        yearLevel : student.yearLevel,
         program: student.program,
         studentId: student.studentId,
         email: student.email, // Include student email
@@ -261,6 +263,7 @@ const handleUpdateStudentDetails = async () => {
       middleName: selectedStudent.middleName,
       lastName: selectedStudent.lastName,
       email: selectedStudent.email,
+      yearLevel : selectedStudent.yearLevel,
       contactNumber: selectedStudent.contactNumber,
       program: selectedStudent.program,
       address: selectedStudent.address,
@@ -283,6 +286,7 @@ const handleUpdateStudentDetails = async () => {
         middleName: selectedStudent.middleName,
         lastName: selectedStudent.lastName,
         email: selectedStudent.email,
+        yearLevel : selectedStudent.yearLevel,
         contactNumber: selectedStudent.contactNumber,
         program: selectedStudent.program,
         address: selectedStudent.address,
@@ -307,7 +311,24 @@ const handleUpdateStudentDetails = async () => {
 };
 
 
-
+const handleDeleteClick = (student) => {
+  setStudentToDelete(student);
+  setShowDeleteModal(true);
+};
+const confirmDelete = async () => {
+  if (!studentToDelete) return;
+  
+  try {
+    await deleteDoc(doc(db, 'users', studentToDelete.id));
+    setStudents((prevStudents) => prevStudents.filter(student => student.id !== studentToDelete.id));
+    setShowDeleteModal(false);
+    setStudentToDelete(null);
+    alert('Student deleted successfully!');
+  } catch (error) {
+    console.error('Error deleting student:', error);
+    alert('Failed to delete the student. Please try again.');
+  }
+};
 
 
   return (
@@ -529,8 +550,8 @@ const handleUpdateStudentDetails = async () => {
         </thead>
         <tbody className="bg-white">
           {sections && sections.length > 0 ? (
-            sections.map((section) => (
-              <tr key={section.id} className="border-b hover:bg-gray-50 transition duration-150 ease-in-out">
+            sections.map((section, index) => (
+              <tr key={section.id} className={`border-b hover:bg-gray-50 transition duration-150 ease-in-out ${index % 2 === 0 ? 'bg-white' : 'bg-gray-100'}`}>
                 <td className="py-2 px-4 text-center">{section.className}</td>
                 <td className="py-2 px-4 text-center">{section.section || 'N/A'}</td>
                 <td className="py-2 px-4 text-center">{section.subjectCode}</td>
@@ -586,6 +607,7 @@ const handleUpdateStudentDetails = async () => {
               <th className="py-3 px-6">Middle Name</th>
               <th className="py-3 px-6">Last Name</th>
               <th className="py-3 px-6">Email</th>
+              <th className="py-3 px-6">Year Level</th>
               <th className="py-3 px-6">Contact Number</th>
               <th className="py-3 px-6">Program</th>
               <th className="py-3 px-6">Student ID</th>
@@ -599,6 +621,7 @@ const handleUpdateStudentDetails = async () => {
                 <td className="py-2 px-4 text-center">{student.middleName || 'N/A'}</td>
                 <td className="py-2 px-4 text-center">{student.lastName}</td>
                 <td className="py-2 px-4 text-center">{student.email}</td>
+                <td className="py-2 px-4 text-center">{student.yearLevel}</td>
                 <td className="py-2 px-4 text-center">{student.contactNumber}</td>
                 <td className="py-2 px-4 text-center">{student.program}</td>
                 <td className="py-2 px-4 text-center">{student.studentId}</td>
@@ -691,6 +714,7 @@ const handleUpdateStudentDetails = async () => {
               <th className="py-3 px-4">Middle Name</th>
               <th className="py-3 px-4">Last Name</th>
               <th className="py-3 px-4">Email</th>
+              <th className="py-3 px-4">Year Level</th>
               <th className="py-3 px-4">Contact Number</th>
               <th className="py-3 px-4">Program</th>
               <th className="py-3 px-4">Student ID</th>
@@ -699,39 +723,76 @@ const handleUpdateStudentDetails = async () => {
             </tr>
           </thead>
           <tbody className="bg-white">
-  {students.length > 0 ? (
-    students
-      .filter(student => 
-        (student.firstName && student.firstName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (student.studentId && student.studentId.toLowerCase().includes(searchTerm.toLowerCase())) || (student.email && student.email.toLowerCase().includes(searchTerm.toLowerCase()))
-      )
-      .map((student) => (
-        <tr key={student.studentId} className="border-b hover:bg-gray-50 transition duration-150 ease-in-out">
-          <td className="py-2 px-4 text-center">{student.firstName}</td>
-          <td className="py-2 px-4 text-center">{student.middleName || 'N/A'}</td>
-          <td className="py-2 px-4 text-center">{student.lastName}</td>
-          <td className="py-2 px-4 text-center">{student.email}</td>
-          <td className="py-2 px-4 text-center">{student.contactNumber}</td>
-          <td className="py-2 px-4 text-center">{student.program}</td>
-          <td className="py-2 px-4 text-center">{student.studentId}</td>
-          <td className="py-2 px-4 text-center">{student.address}</td>
-          <td className="py-2 px-4 text-center">
-            <button
-              className="bg-blue-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-600 transition duration-200"
-              onClick={() => handleViewStudentDetails(student)}
-            >
-              Edit
-            </button>
-          </td>
-        </tr>
-      ))
-  ) : (
-    <tr>
-      <td colSpan="9" className="py-2 px-4 text-center text-gray-500">No students found.</td>
-    </tr>
-  )}
-</tbody>
+            {students.length > 0 ? (
+              students
+                .filter(student => 
+                  (student.firstName && student.firstName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                  (student.studentId && student.studentId.toLowerCase().includes(searchTerm.toLowerCase())) || 
+                  (student.email && student.email.toLowerCase().includes(searchTerm.toLowerCase()))
+                )
+                .map((student, index) => (
+                  <tr key={student.studentId} className={`border-b hover:bg-gray-50 transition duration-150 ease-in-out ${index % 2 === 0 ? 'bg-white' : 'bg-gray-100'}`}>
+                    <td className="py-2 px-4 text-center">{student.firstName}</td>
+                    <td className="py-2 px-4 text-center">{student.middleName || 'N/A'}</td>
+                    <td className="py-2 px-4 text-center">{student.lastName}</td>
+                    <td className="py-2 px-4 text-center">{student.email}</td>
+                    <td className="py-2 px-4 text-center">{student.yearLevel || 'N/A'}</td>
+                    <td className="py-2 px-4 text-center">{student.contactNumber}</td>
+                    <td className="py-2 px-4 text-center">{student.program}</td>
+                    <td className="py-2 px-4 text-center">{student.studentId}</td>
+                    <td className="py-2 px-4 text-center">{student.address}</td>
+                    <td className="py-2 px-4 text-center">
+                      <div className="flex justify-center space-x-2">
+                        <button
+                          className="bg-blue-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-600 transition duration-200 flex items-center"
+                          onClick={() => handleViewStudentDetails(student)}
+                        >
+                          <HiPencil className="" /> Edit
+                        </button>
+                        <button
+                          className="bg-red-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-red-600 transition duration-200 flex items-center"
+                          onClick={() => handleDeleteClick(student)}
+                        >
+                          <HiTrash className="" /> Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+            ) : (
+              <tr>
+                <td colSpan="9" className="py-2 px-4 text-center text-gray-500">No students found.</td>
+              </tr>
+            )}
+          </tbody>
         </table>
+      </div>
+    </div>
+  </div>
+)}
+
+
+{showDeleteModal && (
+  <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50">
+    <div className="bg-white p-6 rounded-lg shadow-lg">
+      <h2 className="text-xl font-semibold mb-4">Confirm Delete</h2>
+      <p>
+  Are you sure you want to delete <strong>{studentToDelete?.firstName}</strong> <strong>{studentToDelete?.lastName}</strong>?
+</p>
+
+      <div className="mt-4 flex justify-end">
+        <button
+          className="bg-gray-300 text-gray-700 py-2 px-4 rounded-md mr-2"
+          onClick={() => setShowDeleteModal(false)}
+        >
+          Cancel
+        </button>
+        <button
+          className="bg-red-500 text-white py-2 px-4 rounded-md"
+          onClick={confirmDelete}
+        >
+          Confirm
+        </button>
       </div>
     </div>
   </div>
@@ -789,6 +850,22 @@ const handleUpdateStudentDetails = async () => {
             placeholder="Enter Email"
           />
         </div>
+
+        <div>
+  <label className="block mb-2 font-medium text-gray-800 text-lg">Year Level</label>
+  <select
+    value={selectedStudent.yearLevel}
+    onChange={(e) => setSelectedStudent({ ...selectedStudent, yearLevel: e.target.value })}
+    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-600"
+  >
+    <option value="">Select Year Level</option>
+    <option value="1st year">1st Year</option>
+    <option value="2nd year">2nd Year</option>
+    <option value="3rd year">3rd Year</option>
+    <option value="4th year">4th Year</option>
+  </select>
+</div>
+
         
         <div>
           <label className="block mb-2 font-medium text-gray-800 text-lg">Contact Number</label>

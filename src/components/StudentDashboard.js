@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Modal from 'react-modal';
-import { Link, Route, Routes, useNavigate, useLocation } from 'react-router-dom';
+import { Link, Route, Routes, useNavigate } from 'react-router-dom';
 import {
   HiOutlineUser,
   HiOutlineCog,
@@ -10,20 +10,16 @@ import {
   HiOutlineCollection,
   HiOutlineAcademicCap,
   HiOutlineLogout,
-  HiOutlineX
+  HiOutlineX,
+  HiBell // Import the HiBell icon here
 } from 'react-icons/hi';
 import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
-import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
 import CustomizeAccount from './CustomizeAccount';
-
-
 import DownloadCourses from './DownloadCourses';
 import ManageCourses from './ManageCourses';
 import AnalyzeResidency from './AnalyzeResidency';
 import UploadGrades from './UploadGrades';
-
-
-
 
 const StudentDashboard = () => {
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
@@ -32,7 +28,8 @@ const StudentDashboard = () => {
   const [isStudent, setIsStudent] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [firstName, setFirstName] = useState('Student');
-  const [profilePictureUrl, setProfilePictureUrl] = useState(''); // New state for profile picture
+  const [profilePictureUrl, setProfilePictureUrl] = useState('');
+  const [notifications, setNotifications] = useState([]); // State to hold notifications
   const navigate = useNavigate();
   const auth = getAuth();
   const db = getFirestore();
@@ -48,7 +45,7 @@ const StudentDashboard = () => {
           if (userData.role === 'Student') {
             setIsStudent(true);
             setFirstName(userData.firstName || 'Student');
-            setProfilePictureUrl(userData.profilePicture || ''); // Set profile picture URL
+            setProfilePictureUrl(userData.profilePicture || '');
           } else {
             setIsStudent(false);
             navigate('/unauthorized');
@@ -64,6 +61,32 @@ const StudentDashboard = () => {
     });
     return () => unsubscribe();
   }, [auth, db, navigate]);
+
+  // Fetch notifications for the current user
+  useEffect(() => {
+    const currentUser = auth.currentUser; // Get the current user
+
+    if (!currentUser) return; // Ensure currentUser is available
+
+    const fetchNotifications = () => {
+      const q = query(
+        collection(db, 'notifications'),
+        where('studentId', '==', currentUser.uid) // Use the current user's ID
+      );
+
+      const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const notificationsArray = [];
+        querySnapshot.forEach((doc) => {
+          notificationsArray.push({ id: doc.id, ...doc.data() });
+        });
+        setNotifications(notificationsArray);
+      });
+
+      return () => unsubscribe();
+    };
+
+    fetchNotifications();
+  }, [auth]);
 
   const toggleProfileDropdown = () => setIsProfileDropdownOpen(!isProfileDropdownOpen);
   const toggleGradesDropdown = () => setIsGradesDropdownOpen(!isGradesDropdownOpen);
@@ -86,128 +109,135 @@ const StudentDashboard = () => {
   }
 
   return (
-<div className="flex flex-col md:flex-row min-h-screen bg-gradient-to-b from-white to-gray-50">
-<aside className="md:w-72 bg-white rounded-lg shadow-lg border border-gray-200 md:h-screen md:flex md:flex-col">
-  <div className="p-5 border-b border-gray-200">
-    <h2 className="text-2xl font-bold text-center text-blue-600">Student Dashboard</h2>
-    <div className="flex justify-center mt-4">
-      <img
-        src={profilePictureUrl}
-        alt="Profile"
-        className="w-28 h-28 rounded-full"
-      />
-    </div>
-    <p className="text-center text-gray-600 mt-2">Welcome, {firstName}!</p>
-  </div>
+    <div className="flex flex-col md:flex-row min-h-screen bg-gradient-to-b from-white to-gray-50">
+      <aside className="md:w-72 bg-white rounded-lg shadow-lg border border-gray-200 md:h-screen md:flex md:flex-col">
+        <div className="p-5 border-b border-gray-200">
+          <h2 className="text-2xl font-bold text-center text-blue-600">Student Dashboard</h2>
+          <div className="flex justify-center mt-4">
+            <img
+              src={profilePictureUrl}
+              alt="Profile"
+              className="w-28 h-28 rounded-full"
+            />
+          </div>
+          <p className="text-center text-gray-600 mt-2">Welcome, {firstName}!</p>
+        </div>
 
-  <nav className="mt-5 flex-grow">
-    <ul className="space-y-2">
-      <li>
-        <Link
-          to="/student-dashboard/customize-account"
-          className="flex items-center px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
-        >
-          <HiOutlineCog className="mr-2 text-xl" />
-          Student Information
-        </Link>
-      </li>
-
-      {/* Curriculum List with Dropdown */}
-      <li>
-        <button
-          onClick={toggleProfileDropdown}
-          className="flex items-center justify-between w-full px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
-        >
-          <span className="flex items-center">
-            <HiOutlineClipboardList className="mr-2 text-xl" />
-            Curriculum List
-          </span>
-          <HiOutlineChevronDown className={`transform transition-transform duration-200 ${isProfileDropdownOpen ? 'rotate-180' : 'rotate-0'}`} />
-        </button>
-        {isProfileDropdownOpen && (
-          <ul className="pl-6 mt-2 space-y-1">
+        <nav className="mt-5 flex-grow">
+          <ul className="space-y-2">
             <li>
               <Link
-                to="/student-dashboard/manage-courses"
-                className="flex items-center px-4 py-2 text-gray-700 bg-white rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
+                to="/student-dashboard/customize-account"
+                className="flex items-center px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
               >
-                <HiOutlineBookOpen className="mr-2 text-xl" />
-                Manage Courses to Enroll
+                <HiOutlineCog className="mr-2 text-xl" />
+                Student Information
               </Link>
             </li>
+
+            {/* Curriculum List with Dropdown */}
+            <li>
+              <button
+                onClick={toggleProfileDropdown}
+                className="flex items-center justify-between w-full px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
+              >
+                <span className="flex items-center">
+                  <HiOutlineClipboardList className="mr-2 text-xl" />
+                  Curriculum List
+                  {/* Notification Icon */}
+                  {notifications.length > 0 && (
+                    <HiBell className="ml-2 text-red-600 text-lg" title="You have new notifications!" />
+                  )}
+                </span>
+                <HiOutlineChevronDown className={`transform transition-transform duration-200 ${isProfileDropdownOpen ? 'rotate-180' : 'rotate-0'}`} />
+              </button>
+
+              {isProfileDropdownOpen && (
+                <ul className="pl-6 mt-2 space-y-1">
+                  <li>
+  <Link
+    to="/student-dashboard/manage-courses"
+    className="flex items-center px-4 py-2 text-gray-700 bg-white rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
+  >
+    <HiOutlineBookOpen className="mr-2 text-xl" />
+    Manage Courses to Enroll
+    {notifications.length > 0 && (
+      <HiBell className="ml-2 text-red-600 text-lg" title="You have new notifications!" />
+    )}
+  </Link>
+</li>
+
+                  <li>
+                    <Link
+                      to="/student-dashboard/download-courses"
+                      className="flex items-center px-4 py-2 text-gray-700 bg-white rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
+                    >
+                      <HiOutlineCollection className="mr-2 text-xl" />
+                      Download Courses to Enroll
+                    </Link>
+                  </li>
+                </ul>
+              )}
+            </li>
+
+            {/* Analyze Residency */}
             <li>
               <Link
-                to="/student-dashboard/download-courses"
-                className="flex items-center px-4 py-2 text-gray-700 bg-white rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
+                to="/student-dashboard/analyze-residency"
+                className="flex items-center px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
               >
-                <HiOutlineCollection className="mr-2 text-xl" />
-                Download Courses to Enroll
+                <HiOutlineAcademicCap className="mr-2 text-xl" />
+                Analyze Residency
               </Link>
+            </li>
+
+            {/* Upload Student Grades with Dropdown */}
+            <li>
+              <button
+                onClick={toggleGradesDropdown}
+                className="flex items-center justify-between w-full px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
+              >
+                <span className="flex items-center">
+                  <HiOutlineClipboardList className="mr-2 text-xl" />
+                  Upload Student Grades
+                </span>
+                <HiOutlineChevronDown className={`transform transition-transform duration-200 ${isGradesDropdownOpen ? 'rotate-180' : 'rotate-0'}`} />
+              </button>
+              {isGradesDropdownOpen && (
+                <ul className="pl-6 mt-2 space-y-1">
+                  <li>
+                    <Link
+                      to="/student-dashboard/upload-grades"
+                      className="flex items-center px-4 py-2 text-gray-700 bg-white rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
+                    >
+                      <HiOutlineClipboardList className="mr-2 text-xl" />
+                      Upload Grade
+                    </Link>
+                  </li>
+                </ul>
+              )}
             </li>
           </ul>
-        )}
-      </li>
+        </nav>
 
-      {/* Analyze Residency */}
-      <li>
-        <Link
-          to="/student-dashboard/analyze-residency"
-          className="flex items-center px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
-        >
-          <HiOutlineAcademicCap className="mr-2 text-xl" />
-          Analyze Residency
-        </Link>
-      </li>
+        <div className="p-5">
+          <button
+            onClick={openModal}
+            className="w-full flex items-center justify-center px-4 py-3 text-white bg-red-500 rounded-lg shadow hover:bg-red-600 transition-colors duration-200"
+          >
+            <HiOutlineLogout className="mr-2 text-xl" />
+            Logout
+          </button>
+        </div>
+      </aside>
 
-      {/* Upload Student Grades with Dropdown */}
-      <li>
-        <button
-          onClick={toggleGradesDropdown}
-          className="flex items-center justify-between w-full px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
-        >
-          <span className="flex items-center">
-            <HiOutlineClipboardList className="mr-2 text-xl" />
-            Upload Student Grades
-          </span>
-          <HiOutlineChevronDown className={`transform transition-transform duration-200 ${isGradesDropdownOpen ? 'rotate-180' : 'rotate-0'}`} />
-        </button>
-        {isGradesDropdownOpen && (
-          <ul className="pl-6 mt-2 space-y-1">
-            <li>
-              <Link
-                to="/student-dashboard/upload-grades"
-                className="flex items-center px-4 py-2 text-gray-700 bg-white rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
-              >
-                <HiOutlineClipboardList className="mr-2 text-xl" />
-                Upload Grade
-              </Link>
-            </li>
-          </ul>
-        )}
-      </li>
-    </ul>
-  </nav>
-
-  <div className="p-5">
-    <button
-      onClick={openModal}
-      className="w-full flex items-center justify-center px-4 py-3 text-white bg-red-500 rounded-lg shadow hover:bg-red-600 transition-colors duration-200"
-    >
-      <HiOutlineLogout className="mr-2 text-xl" />
-      Logout
-    </button>
-  </div>
-</aside>
-
-      {/* Main Content */}
-      <main className="flex-1 p-5">
+      <main className="flex-grow p-5">
         <Routes>
           <Route path="customize-account" element={<CustomizeAccount />} />
-          <Route path="manage-courses" element={<ManageCourses />} />
           <Route path="download-courses" element={<DownloadCourses />} />
+          <Route path="manage-courses" element={<ManageCourses />} />
           <Route path="analyze-residency" element={<AnalyzeResidency />} />
           <Route path="upload-grades" element={<UploadGrades />} />
-          <Route path="/" element={<div>Welcome to the Student Dashboard! Select an option from the sidebar.</div>} />
         </Routes>
       </main>
 
