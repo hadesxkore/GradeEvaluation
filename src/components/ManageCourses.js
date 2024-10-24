@@ -237,19 +237,23 @@ const ManageCourses = () => {
 
 
 
- {/* Notification Modal */}
+{/* Notification Modal */}
 {isNotificationModalOpen && (
   <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 transition-opacity duration-300">
     <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
-      <h4 className="text-xl font-bold text-gray-800">Notification from Evaluator</h4>
-      
+      <h4 className="text-xl text-gray-800">
+        Notification from: <span className="font-bold">Evaluator</span>
+      </h4>
+
       {/* Message Card */}
-      <div className="mt-4 bg-gray-100 rounded-lg p-6 shadow-md">
-        <p className="text-lg text-gray-700">{activeNotification?.message}</p>
+      <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4 shadow-sm">
+        <p className="text-lg text-gray-800 leading-relaxed">
+          {activeNotification?.message}
+        </p>
       </div>
-      
+
       <button
-        className="mt-6 w-full bg-red-600 text-white px-4 py-3 rounded-lg text-lg hover:bg-red-700 transition-colors"
+        className="mt-6 w-full bg-red-500 text-white px-4 py-2 rounded-md text-lg font-semibold hover:bg-red-600 transition-colors duration-200"
         onClick={() => setIsNotificationModalOpen(false)}
       >
         Close
@@ -257,6 +261,7 @@ const ManageCourses = () => {
     </div>
   </div>
 )}
+
 
            {/* Upload Course Modal */}
 {isModalOpen && (

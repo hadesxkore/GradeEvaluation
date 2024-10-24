@@ -71,108 +71,110 @@ const FacultyDashboard = () => {
   const closeModal = () => setIsModalOpen(false);
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
-      {/* Sidebar */}
-      <aside className="md:w-72 bg-white border-r border-gray-200 shadow-lg md:h-screen md:flex md:flex-col">
-        <div className="p-5 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-center text-teal-600">Faculty Dashboard</h2>
-        </div>
-        <nav className="mt-5 flex-grow">
-          <ul className="space-y-2">
-            <li>
-              <button
-                onClick={toggleEvaluationDropdown}
-                className="flex items-center w-full px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-teal-500 hover:text-white transition-colors duration-200"
-              >
-                <HiOutlineDocumentText className="mr-2 text-xl" />
-                Evaluation
-                <HiChevronDown className={`ml-auto transform ${isEvaluationDropdownOpen ? 'rotate-180' : 'rotate-0'}`} />
-              </button>
-              {isEvaluationDropdownOpen && (
-                <ul className="mt-2 space-y-2 ml-6">
-                  <li>
-                    <Link
-                      to="/faculty-dashboard/encode-grades"
-                      className="flex items-center px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-teal-500 hover:text-white transition-colors duration-200"
-                    >
-                      <HiOutlineDocumentText className="mr-2 text-xl" />
-                      Encode Grades
-                    </Link>
-                  </li>
-                </ul>
-              )}
-            </li>
-            <li>
-              <Link
-                to="/faculty-dashboard/upload-student-masterlist"
-                className="flex items-center px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-teal-500 hover:text-white transition-colors duration-200"
-              >
-                <HiOutlineUser className="mr-2 text-xl" />
-                Upload Student Masterlist
-              </Link>
-            </li>
-            <li>
-              <button
-                onClick={toggleManageCoursesDropdown}
-                className="flex items-center w-full px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-teal-500 hover:text-white transition-colors duration-200"
-              >
-                <HiOutlineBriefcase className="mr-2 text-xl" />
-                Manage Courses
-                <HiChevronDown className={`ml-auto transform ${isManageCoursesDropdownOpen ? 'rotate-180' : 'rotate-0'}`} />
-              </button>
-              {isManageCoursesDropdownOpen && (
-                <ul className="mt-2 space-y-2 ml-6">
-                  <li>
-                    <Link
-                      to="/faculty-dashboard/create-subjects"
-                      className="flex items-center px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-teal-500 hover:text-white transition-colors duration-200"
-                    >
-                      <HiOutlineDocumentAdd className="mr-2 text-xl" />
-                      Create Subjects
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      to="/faculty-dashboard/create-section"
-                      className="flex items-center px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-teal-500 hover:text-white transition-colors duration-200"
-                    >
-                      <HiOutlineFolderAdd className="mr-2 text-xl" />
-                      Students and Sections
-                    </Link>
-                  </li>
-                </ul>
-              )}
-            </li>
-            <li>
-              <Link
-                to="/faculty-dashboard/view-evaluation-cert"
-                className="flex items-center px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-teal-500 hover:text-white transition-colors duration-200"
-              >
-                <HiOutlineFolder className="mr-2 text-xl" />
-                View Evaluation Cert
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/faculty-dashboard/edit-student-profile"
-                className="flex items-center px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-teal-500 hover:text-white transition-colors duration-200"
-              >
-                <HiOutlineCog className="mr-2 text-xl" />
-                Edit Student Profile
-              </Link>
-            </li>
-          </ul>
-        </nav>
-        <div className="p-5">
-          <button
-            onClick={openModal}
-            className="w-full flex items-center justify-center px-4 py-3 text-white bg-teal-500 rounded-lg shadow hover:bg-teal-600 transition-colors duration-200"
-          >
-            <HiOutlineLogout className="mr-2 text-xl" />
-            Logout
-          </button>
-        </div>
-      </aside>
+    <div className="flex flex-col md:flex-row min-h-screen bg-gray-100">
+    {/* Sidebar */}
+    <aside className="md:w-80 bg-white shadow-lg md:h-screen md:flex md:flex-col">
+      <div className="p-6 bg-teal-600 text-white">
+        <h2 className="text-3xl font-bold text-center">Faculty Dashboard</h2>
+      </div>
+      <nav className="mt-5 flex-grow">
+        <ul className="space-y-2">
+          <li>
+            <button
+              onClick={toggleEvaluationDropdown}
+              className="flex items-center w-full px-5 py-4 text-lg text-gray-800 bg-white rounded-lg hover:bg-teal-500 hover:text-white transition-colors duration-200"
+            >
+              <HiOutlineDocumentText className="mr-3 text-2xl" />
+              Evaluation
+              <HiChevronDown className={`ml-auto transform ${isEvaluationDropdownOpen ? 'rotate-180' : 'rotate-0'}`} />
+            </button>
+            {isEvaluationDropdownOpen && (
+              <ul className="mt-2 space-y-2 ml-6">
+                <li>
+                  <Link
+                    to="/faculty-dashboard/encode-grades"
+                    className="flex items-center px-4 py-3 text-lg text-gray-800 bg-gray-50 rounded-lg hover:bg-teal-500 hover:text-white transition-colors duration-200"
+                  >
+                    <HiOutlineDocumentText className="mr-3 text-xl" />
+                    Encode Grades
+                  </Link>
+                </li>
+              </ul>
+            )}
+          </li>
+          <li>
+            <Link
+              to="/faculty-dashboard/upload-student-masterlist"
+              className="flex items-center px-5 py-4 text-lg text-gray-800 bg-white rounded-lg hover:bg-teal-500 hover:text-white transition-colors duration-200"
+            >
+              <HiOutlineUser className="mr-3 text-2xl" />
+              Upload Student Masterlist
+            </Link>
+          </li>
+          <li>
+            <button
+              onClick={toggleManageCoursesDropdown}
+              className="flex items-center w-full px-5 py-4 text-lg text-gray-800 bg-white rounded-lg hover:bg-teal-500 hover:text-white transition-colors duration-200"
+            >
+              <HiOutlineBriefcase className="mr-3 text-2xl" />
+              Manage Courses
+              <HiChevronDown className={`ml-auto transform ${isManageCoursesDropdownOpen ? 'rotate-180' : 'rotate-0'}`} />
+            </button>
+            {isManageCoursesDropdownOpen && (
+              <ul className="mt-2 space-y-2 ml-6">
+                <li>
+                  <Link
+                    to="/faculty-dashboard/create-subjects"
+                    className="flex items-center px-4 py-3 text-lg text-gray-800 bg-gray-50 rounded-lg hover:bg-teal-500 hover:text-white transition-colors duration-200"
+                  >
+                    <HiOutlineDocumentAdd className="mr-3 text-xl" />
+                    Create Subjects
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/faculty-dashboard/create-section"
+                    className="flex items-center px-4 py-3 text-lg text-gray-800 bg-gray-50 rounded-lg hover:bg-teal-500 hover:text-white transition-colors duration-200"
+                  >
+                    <HiOutlineFolderAdd className="mr-3 text-xl" />
+                    Students and Sections
+                  </Link>
+                </li>
+              </ul>
+            )}
+          </li>
+          <li>
+            <Link
+              to="/faculty-dashboard/view-evaluation-cert"
+              className="flex items-center px-5 py-4 text-lg text-gray-800 bg-white rounded-lg hover:bg-teal-500 hover:text-white transition-colors duration-200"
+            >
+              <HiOutlineFolder className="mr-3 text-2xl" />
+              View Evaluation Cert
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/faculty-dashboard/edit-student-profile"
+              className="flex items-center px-5 py-4 text-lg text-gray-800 bg-white rounded-lg hover:bg-teal-500 hover:text-white transition-colors duration-200"
+            >
+              <HiOutlineCog className="mr-3 text-2xl" />
+              Edit Student Profile
+            </Link>
+          </li>
+        </ul>
+      </nav>
+      <div className="p-6 bg-gray-50 border-t border-gray-200">
+        <button
+          onClick={openModal}
+          className="w-full flex items-center justify-center px-5 py-4 text-lg text-white bg-teal-600 rounded-lg hover:bg-teal-700 transition-colors duration-200"
+        >
+          <HiOutlineLogout className="mr-3 text-2xl" />
+          Logout
+        </button>
+      </div>
+    </aside>
+ 
+  
 
       {/* Main Content */}
       <main className="flex-1 p-5">

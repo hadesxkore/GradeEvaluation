@@ -65,6 +65,7 @@ const CreateEvaluatorAccount = () => {
     setError('');
     setSuccess('');
     try {
+      
       // Create the user account using Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
@@ -110,49 +111,49 @@ const CreateEvaluatorAccount = () => {
 
   return (
     <div className="p-5">
-      {/* Main Card for Evaluator Management */}
-      <div className="bg-white rounded-lg shadow-md p-5 mb-4">
-        <h2 className="text-2xl font-semibold mb-3">Evaluator Management</h2>
-        <p className="mb-4 text-gray-700">
-          Manage evaluator accounts efficiently. Create new accounts and view existing ones.
-        </p>
+     {/* Main Card for Evaluator Management */}
+<div className="bg-gray-800 text-white rounded-lg shadow-md p-5 mb-4">
+  <h2 className="text-2xl font-semibold mb-3">Evaluator Management</h2>
+  <p className="mb-4 text-gray-300">
+    Manage evaluator accounts efficiently. Create new accounts and view existing ones.
+  </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Create Evaluator Account */}
-          <div className="bg-gray-100 p-4 rounded-lg border border-gray-300 shadow-sm hover:shadow-lg transition-shadow">
-            <h3 className="text-xl font-semibold flex items-center">
-              <HiPlus className="mr-2 text-green-500" /> Create Evaluator Account
-            </h3>
-            <p className="mt-2 text-gray-600">Add a new evaluator account to the system.</p>
-            <button
-              className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors"
-              onClick={openModal}
-            >
-              Create Account
-            </button>
-          </div>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {/* Create Evaluator Account */}
+    <div className="bg-gray-700 p-4 rounded-lg border border-gray-600 shadow-sm hover:shadow-lg transition-shadow">
+      <h3 className="text-xl font-semibold flex items-center">
+        <HiPlus className="mr-2 text-green-400" /> Create Evaluator Account
+      </h3>
+      <p className="mt-2 text-gray-200">Add a new evaluator account to the system.</p>
+      <button
+        className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors"
+        onClick={openModal}
+      >
+        Create Account
+      </button>
+    </div>
 
-          {/* View Evaluators */}
-          <div className="bg-gray-100 p-4 rounded-lg border border-gray-300 shadow-sm hover:shadow-lg transition-shadow">
-            <h3 className="text-xl font-semibold flex items-center">
-              <HiEye className="mr-2 text-blue-500" /> View Evaluators
-            </h3>
-            <p className="mt-2 text-gray-600">View all evaluators in the system.</p>
-            <button
-              className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
-              onClick={fetchEvaluators}
-            >
-              Show Evaluators
-            </button>
-          </div>
-        </div>
-      </div>
+    {/* View Evaluators */}
+    <div className="bg-gray-700 p-4 rounded-lg border border-gray-600 shadow-sm hover:shadow-lg transition-shadow">
+      <h3 className="text-xl font-semibold flex items-center">
+        <HiEye className="mr-2 text-blue-400" /> View Evaluators
+      </h3>
+      <p className="mt-2 text-gray-200">View all evaluators in the system.</p>
+      <button
+        className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
+        onClick={fetchEvaluators}
+      >
+        Show Evaluators
+      </button>
+    </div>
+  </div>
+</div>
 
-    {/* Modal for creating an evaluator */}
+{/* Modal for creating an evaluator */}
 {showModal && (
   <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-    <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-2xl">
-      <h2 className="text-3xl font-semibold mb-6 text-center">Create Evaluator Account</h2>
+    <div className="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-2xl">
+      <h2 className="text-3xl font-semibold mb-6 text-center text-white">Create Evaluator Account</h2>
       {error && <p className="text-red-500 text-center mb-4">{error}</p>}
       {success && <p className="text-green-500 text-center mb-4">{success}</p>}
 
@@ -163,7 +164,7 @@ const CreateEvaluatorAccount = () => {
           value={firstName}
           onChange={(e) => setFirstName(e.target.value)}
           placeholder="First Name"
-          className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-500"
+          className="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring focus:ring-blue-500"
         />
         
         {/* Middle Name Input */}
@@ -172,7 +173,7 @@ const CreateEvaluatorAccount = () => {
           value={middleName}
           onChange={(e) => setMiddleName(e.target.value)}
           placeholder="Middle Name"
-          className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-500"
+          className="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring focus:ring-blue-500"
         />
         
         {/* Last Name Input */}
@@ -181,7 +182,7 @@ const CreateEvaluatorAccount = () => {
           value={lastName}
           onChange={(e) => setLastName(e.target.value)}
           placeholder="Last Name"
-          className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-500"
+          className="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring focus:ring-blue-500"
         />
         
         {/* Email Input */}
@@ -190,7 +191,7 @@ const CreateEvaluatorAccount = () => {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Email"
-          className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-500"
+          className="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring focus:ring-blue-500"
         />
         
         {/* Password Input */}
@@ -199,7 +200,7 @@ const CreateEvaluatorAccount = () => {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Password"
-          className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-500"
+          className="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring focus:ring-blue-500"
         />
         
         {/* Contact Number Input */}
@@ -208,7 +209,7 @@ const CreateEvaluatorAccount = () => {
           value={contactNumber}
           onChange={(e) => setContactNumber(e.target.value)}
           placeholder="Contact Number"
-          className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-500"
+          className="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring focus:ring-blue-500"
         />
         
         {/* Address Input */}
@@ -217,7 +218,7 @@ const CreateEvaluatorAccount = () => {
           value={address}
           onChange={(e) => setAddress(e.target.value)}
           placeholder="Address"
-          className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-500"
+          className="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring focus:ring-blue-500"
         />
         
         {/* Date of Birth Input */}
@@ -225,7 +226,7 @@ const CreateEvaluatorAccount = () => {
           type="date"
           value={birthdate}
           onChange={(e) => setBirthdate(e.target.value)}
-          className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-500"
+          className="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring focus:ring-blue-500"
         />
         
         {/* Faculty ID Input */}
@@ -234,13 +235,13 @@ const CreateEvaluatorAccount = () => {
           value={facultyId}
           onChange={(e) => setFacultyId(e.target.value)}
           placeholder="Faculty ID"
-          className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-500"
+          className="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring focus:ring-blue-500"
         />
       </div>
       
       <div className="flex justify-end mt-6">
         <button
-          className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors mr-2"
+          className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors mr-2"
           onClick={closeModal}
         >
           Cancel
@@ -255,7 +256,6 @@ const CreateEvaluatorAccount = () => {
     </div>
   </div>
 )}
-
 
 {showSuccessModal && (
   <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
@@ -276,56 +276,56 @@ const CreateEvaluatorAccount = () => {
     </div>
   </div>
 )}
-
-<div className="bg-white shadow-md rounded-lg overflow-hidden">
-  <div className="p-4 bg-gray-50">
+<div className="bg-white shadow-lg rounded-lg overflow-hidden">
+  <div className="p-6 bg-gray-100">
     <input
       type="text"
       placeholder="Search by Faculty ID or First Name..."
       value={searchTerm}
       onChange={e => setSearchTerm(e.target.value)}
-      className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:ring-blue-500 transition duration-150 ease-in-out"
+      className="w-full p-4 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring focus:ring-blue-400 transition duration-150 ease-in-out"
     />
   </div>
   <div className="overflow-x-auto">
     <table className="min-w-full border-collapse border border-gray-300">
-      <thead className="bg-blue-600 text-white">
+      <thead className="bg-blue-700 text-white">
         <tr>
-          <th className="py-3 px-4">First Name</th>
-          <th className="py-3 px-4">Middle Name</th>
-          <th className="py-3 px-4">Last Name</th>
-          <th className="py-3 px-4">Email</th>
-          <th className="py-3 px-4">Faculty ID</th>
-          <th className="py-3 px-4">Date of Birth</th>
-          <th className="py-3 px-4">Address</th>
-          <th className="py-3 px-4">Role</th>
-          <th className="py-3 px-4">Contact Number</th>
+          <th className="py-4 px-5 text-left">First Name</th>
+          <th className="py-4 px-5 text-left">Middle Name</th>
+          <th className="py-4 px-5 text-left">Last Name</th>
+          <th className="py-4 px-5 text-left">Email</th>
+          <th className="py-4 px-5 text-left">Faculty ID</th>
+          <th className="py-4 px-5 text-left">Date of Birth</th>
+          <th className="py-4 px-5 text-left">Address</th>
+          <th className="py-4 px-5 text-left">Role</th>
+          <th className="py-4 px-5 text-left">Contact Number</th>
         </tr>
       </thead>
       <tbody className="bg-white">
         {filteredEvaluators.length > 0 ? (
           filteredEvaluators.map(evaluator => (
             <tr key={evaluator.id} className="border-b hover:bg-blue-50 transition duration-150 ease-in-out">
-              <td className="py-2 px-4 text-center">{evaluator.firstName}</td>
-              <td className="py-2 px-4 text-center">{evaluator.middleName}</td>
-              <td className="py-2 px-4 text-center">{evaluator.lastName}</td>
-              <td className="py-2 px-4 text-center">{evaluator.email}</td>
-              <td className="py-2 px-4 text-center">{evaluator.facultyId}</td>
-              <td className="py-2 px-4 text-center">{evaluator.birthdate}</td>
-              <td className="py-2 px-4 text-center">{evaluator.address}</td>
-              <td className="py-2 px-4 text-center">{evaluator.role}</td>
-              <td className="py-2 px-4 text-center">{evaluator.contactNumber}</td>
+              <td className="py-3 px-5 text-center">{evaluator.firstName}</td>
+              <td className="py-3 px-5 text-center">{evaluator.middleName}</td>
+              <td className="py-3 px-5 text-center">{evaluator.lastName}</td>
+              <td className="py-3 px-5 text-center">{evaluator.email}</td>
+              <td className="py-3 px-5 text-center">{evaluator.facultyId}</td>
+              <td className="py-3 px-5 text-center">{evaluator.birthdate}</td>
+              <td className="py-3 px-5 text-center">{evaluator.address}</td>
+              <td className="py-3 px-5 text-center">{evaluator.role}</td>
+              <td className="py-3 px-5 text-center">{evaluator.contactNumber}</td>
             </tr>
           ))
         ) : (
           <tr>
-            <td colSpan="9" className="py-2 px-4 text-center text-gray-500">No evaluators found.</td>
+            <td colSpan="9" className="py-3 px-5 text-center text-gray-500">No evaluators found.</td>
           </tr>
         )}
       </tbody>
     </table>
   </div>
 </div>
+
 
     </div>
   );

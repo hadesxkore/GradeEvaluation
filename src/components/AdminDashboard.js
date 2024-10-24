@@ -72,71 +72,73 @@ const AdminDashboard = () => {
     return null; // Optionally, you can show a loading state or a placeholder
   }
   return (
-      <div className="flex flex-col md:flex-row min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
-        {/* Sidebar */}
-        <aside className="md:w-72 bg-white border-r border-gray-200 shadow-lg md:h-screen md:flex md:flex-col">
-          <div className="p-5 border-b border-gray-200">
-            <h2 className="text-2xl font-bold text-center text-red-600">Admin Dashboard</h2>
-          </div>
-          <nav className="mt-5 flex-grow">
-            <ul className="space-y-2">
-              <li>
-                <Link
-                  to="/admin-dashboard/create-evaluator-account"
-                  className="flex items-center px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-red-500 hover:text-white transition-colors duration-200"
-                >
-                  <HiOutlineUserAdd className="mr-2 text-xl" />
-                  Create Evaluator Account
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/admin-dashboard/content-customization"
-                  className="flex items-center px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-red-500 hover:text-white transition-colors duration-200"
-                >
-                  <HiOutlineAdjustments className="mr-2 text-xl" />
-                  Content Customization
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/admin-dashboard/reports"
-                  className="flex items-center px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-red-500 hover:text-white transition-colors duration-200"
-                >
-                  <HiOutlineClipboardList className="mr-2 text-xl" />
-                  Reports
-                </Link>
-              </li>
-              <li>
-          <Link
-            to="/admin-dashboard/admin-add-subject"
-            className="flex items-center px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-red-500 hover:text-white transition-colors duration-200"
-          >
-            <HiOutlinePlusCircle className="mr-2 text-xl" />
-            Add Subject
-          </Link>
-        </li>
-              <li>
-                <Link
-                  to="/admin-dashboard/system-settings"
-                  className="flex items-center px-4 py-3 text-gray-700 bg-white rounded-lg shadow hover:bg-red-500 hover:text-white transition-colors duration-200"
-                >
-                  <HiOutlineCog className="mr-2 text-xl" />
-                  System Settings
-                </Link>
-              </li>
-            </ul>
-          </nav>
-          <div className="p-5">
-            <button
-              onClick={openModal}
-              className="w-full flex items-center justify-center px-4 py-3 text-white bg-red-500 rounded-lg shadow hover:bg-red-600 transition-colors duration-200"
+    <div className="flex flex-col md:flex-row min-h-screen bg-gradient-to-b from-gray-100 to-gray-300">
+    {/* Sidebar */}
+    <aside className="md:w-64 bg-gray-800 text-white shadow-lg h-screen flex flex-col">
+      <div className="p-4 border-b border-gray-700">
+        <h2 className="text-2xl font-bold text-center">Admin Dashboard</h2>
+      </div>
+      <nav className="mt-4 flex-grow overflow-y-auto">
+        <ul className="space-y-1">
+          <li>
+            <Link
+              to="/admin-dashboard/create-evaluator-account"
+              className="flex items-center px-4 py-3 text-gray-300 hover:bg-red-600 hover:text-white transition-colors duration-200"
             >
-              <HiOutlineLogout className="mr-2 text-xl" />
-              Logout
-            </button>
-          </div>
-        </aside>
+              <HiOutlineUserAdd className="mr-3 text-lg" />
+              Create Evaluator
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/admin-dashboard/content-customization"
+              className="flex items-center px-4 py-3 text-gray-300 hover:bg-red-600 hover:text-white transition-colors duration-200"
+            >
+              <HiOutlineAdjustments className="mr-3 text-lg" />
+              Content Customization
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/admin-dashboard/reports"
+              className="flex items-center px-4 py-3 text-gray-300 hover:bg-red-600 hover:text-white transition-colors duration-200"
+            >
+              <HiOutlineClipboardList className="mr-3 text-lg" />
+              Reports
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/admin-dashboard/admin-add-subject"
+              className="flex items-center px-4 py-3 text-gray-300 hover:bg-red-600 hover:text-white transition-colors duration-200"
+            >
+              <HiOutlinePlusCircle className="mr-3 text-lg" />
+              Create New Curriculum
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/admin-dashboard/system-settings"
+              className="flex items-center px-4 py-3 text-gray-300 hover:bg-red-600 hover:text-white transition-colors duration-200"
+            >
+              <HiOutlineCog className="mr-3 text-lg" />
+              System Settings
+            </Link>
+          </li>
+        </ul>
+      </nav>
+      <div className="p-4 border-t border-gray-700">
+        <button
+          onClick={openModal}
+          className="w-full flex items-center justify-center px-4 py-3 text-white bg-red-500 rounded-lg shadow hover:bg-red-600 transition-colors duration-200"
+        >
+          <HiOutlineLogout className="mr-3 text-lg" />
+          Logout
+        </button>
+      </div>
+    </aside>
+
+  
      
 
       {/* Main Content */}

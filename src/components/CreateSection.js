@@ -333,58 +333,59 @@ const confirmDelete = async () => {
 
   return (
     <div className="p-5">
-      {/* Main Card for Section Management */}
-      
-      <div className="bg-white rounded-lg shadow-md p-5 mb-4">
-        <h2 className="text-2xl font-semibold mb-3">Section Management</h2>
-        <p className="mb-4 text-gray-700">
-          Manage sections efficiently. Create new sections and view existing students.
-        </p>
+     {/* Main Card for Section Management */}
+{/* Main Card for Section Management */}
+<div className="bg-white rounded-lg shadow-lg p-5 mb-4">
+  <h2 className="text-2xl font-semibold mb-3">Section Management</h2>
+  <p className="mb-4 text-gray-700">
+    Manage sections efficiently. Create new sections and view existing students.
+  </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* View Students */}
-          <div className="bg-gray-100 p-4 rounded-lg border border-gray-300 shadow-sm hover:shadow-lg transition-shadow">
-            <h3 className="text-xl font-semibold flex items-center">
-              <HiOutlineEye className="mr-2 text-blue-500" /> View Students
-            </h3>
-            <p className="mt-2 text-gray-600">View all students enrolled in the sections.</p>
-            <button
-              className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
-              onClick={viewStudents}
-            >
-              Show Students
-            </button>
-          </div>
+  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+    {/* View Students */}
+    <div className="bg-gradient-to-r from-blue-50 to-sky-100 p-4 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+      <h3 className="text-xl font-semibold flex items-center">
+        <HiOutlineEye className="mr-2 text-sky-500" /> View Students
+      </h3>
+      <p className="mt-2 text-gray-600">View all existing students</p>
+      <button
+        className="mt-4 bg-gradient-to-r from-sky-400 to-sky-600 text-white px-4 py-2 rounded-lg hover:from-sky-500 hover:to-sky-700 transition-transform transform hover:scale-105"
+        onClick={viewStudents}
+      >
+        Show Students
+      </button>
+    </div>
 
-          {/* Create Section */}
-          <div className="bg-gray-100 p-4 rounded-lg border border-gray-300 shadow-sm hover:shadow-lg transition-shadow">
-            <h3 className="text-xl font-semibold flex items-center">
-              <HiPlus className="mr-2 text-green-500" /> Create Section
-            </h3>
-            <p className="mt-2 text-gray-600">Add a new section to the system.</p>
-            <button
-              className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors"
-              onClick={openModal}
-            >
-              Add Section
-            </button>
-          </div>
-           {/* View Sections */}
-           <div className="bg-gray-100 p-4 rounded-lg border border-gray-300 shadow-sm hover:shadow-lg transition-shadow">
-            <h3 className="text-xl font-semibold flex items-center">
-              <HiOutlineEye className="mr-2 text-purple-500" /> View Sections
-            </h3>
-            <p className="mt-2 text-gray-600">View all existing sections.</p>
-            <button
-              className="mt-4 bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition-colors"
-              onClick={openSectionsModal}
-            >
-              Show Sections
-            </button>
-          </div>
-   
-        </div>
-      </div>
+    {/* Create Section */}
+    <div className="bg-gradient-to-r from-teal-50 to-teal-100 p-4 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+      <h3 className="text-xl font-semibold flex items-center">
+        <HiPlus className="mr-2 text-teal-500" /> Create Section
+      </h3>
+      <p className="mt-2 text-gray-600">Add a new section to the system.</p>
+      <button
+        className="mt-4 bg-gradient-to-r from-teal-400 to-teal-600 text-white px-4 py-2 rounded-lg hover:from-teal-500 hover:to-teal-700 transition-transform transform hover:scale-105"
+        onClick={openModal}
+      >
+        Add Section
+      </button>
+    </div>
+
+    {/* View Sections */}
+    <div className="bg-gradient-to-r from-indigo-50 to-indigo-100 p-4 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+      <h3 className="text-xl font-semibold flex items-center">
+        <HiOutlineEye className="mr-2 text-indigo-500" /> View Sections
+      </h3>
+      <p className="mt-2 text-gray-600">View all existing sections.</p>
+      <button
+        className="mt-4 bg-gradient-to-r from-indigo-400 to-indigo-600 text-white px-4 py-2 rounded-lg hover:from-indigo-500 hover:to-indigo-700 transition-transform transform hover:scale-105"
+        onClick={openSectionsModal}
+      >
+        Show Sections
+      </button>
+    </div>
+  </div>
+</div>
+
 
     
 
@@ -561,18 +562,20 @@ const confirmDelete = async () => {
                 <td className="py-2 px-4 text-center">{section.room}</td>
                 <td className="py-2 px-4 text-center">{section.units}</td>
                 <td className="py-2 px-4 text-center">
-                <button 
-  className="bg-teal-600 text-white font-semibold py-2 px-4 rounded hover:bg-teal-700 transition duration-200"
-  onClick={() => handleAddStudent(section.id)} // Call the function to show modal
->
-  Add Student
-</button>
-<button 
-    className="bg-blue-600 text-white font-semibold py-2 px-4 rounded hover:bg-blue-700 transition duration-200 ml-2"
-    onClick={() => handleViewStudents(section.id)} // Call the function to show the students modal
-  >
-    View Students
-  </button>
+                  <div className="flex justify-center space-x-2"> {/* Flexbox for buttons */}
+                    <button 
+                      className="bg-teal-600 text-white font-semibold py-2 px-4 rounded hover:bg-teal-700 transition duration-200"
+                      onClick={() => handleAddStudent(section.id)} // Call the function to show modal
+                    >
+                      Add Student
+                    </button>
+                    <button 
+                      className="bg-blue-600 text-white font-semibold py-2 px-4 rounded hover:bg-blue-700 transition duration-200"
+                      onClick={() => handleViewStudents(section.id)} // Call the function to show the students modal
+                    >
+                      View Students
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))
@@ -706,7 +709,7 @@ const confirmDelete = async () => {
     </div>
     
     <div className="overflow-x-auto">
-      <div className={`overflow-y-auto ${students.length >= 5 ? 'max-h-96' : ''}`}>
+      <div className={`overflow-y-auto ${students.length >= 7 ? 'max-h-96' : 'max-h-[500px]'}`}>
         <table className="min-w-full border-collapse border border-gray-300">
           <thead className="bg-teal-600 text-white sticky top-0">
             <tr>
@@ -761,7 +764,7 @@ const confirmDelete = async () => {
                 ))
             ) : (
               <tr>
-                <td colSpan="9" className="py-2 px-4 text-center text-gray-500">No students found.</td>
+                <td colSpan="10" className="py-2 px-4 text-center text-gray-500">No students found.</td>
               </tr>
             )}
           </tbody>
