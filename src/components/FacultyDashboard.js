@@ -152,15 +152,7 @@ const FacultyDashboard = () => {
               View Evaluation Cert
             </Link>
           </li>
-          <li>
-            <Link
-              to="/faculty-dashboard/edit-student-profile"
-              className="flex items-center px-5 py-4 text-lg text-gray-800 bg-white rounded-lg hover:bg-teal-500 hover:text-white transition-colors duration-200"
-            >
-              <HiOutlineCog className="mr-3 text-2xl" />
-              Edit Student Profile
-            </Link>
-          </li>
+          
         </ul>
       </nav>
       <div className="p-6 bg-gray-50 border-t border-gray-200">

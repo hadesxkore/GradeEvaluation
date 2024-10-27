@@ -6,6 +6,8 @@ import { collection, addDoc, getDocs, deleteDoc } from 'firebase/firestore';
 import { query, where } from 'firebase/firestore'; // Import query and where
 import { doc, setDoc, getDoc, updateDoc   } from 'firebase/firestore'; // Import necessary functions
 import AdminDashboard from './AdminDashboard';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const CreateSection = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);

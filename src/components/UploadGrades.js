@@ -153,45 +153,46 @@ const UploadGrades = () => {
     };
     return (
         <div className="p-5 bg-white rounded-lg shadow-md">
-            <h2 className="text-2xl font-semibold mb-3">Manage Grades</h2>
-            <p className="mb-4 text-gray-700">
-                Easily upload and view your grades using the options below.
-            </p>
+            <h2 className="text-2xl font-semibold mb-3 text-gray-800">Manage Grades</h2>
+<p className="mb-4 text-gray-700">
+    Easily upload and view your grades using the options below.
+</p>
 
-            {/* Grades Management Section */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Upload My Grade */}
-                <div className="bg-gray-100 p-4 rounded-lg border border-gray-300 shadow-sm hover:shadow-lg transition-shadow">
-                    <h3 className="text-xl font-semibold flex items-center">
-                        <HiUpload className="mr-2 text-green-500" /> Upload My Grade
-                    </h3>
-                    <p className="mt-2 text-gray-600">
-                        Upload your grades to keep track of your academic progress.
-                    </p>
-                    <button
-                        className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors"
-                        onClick={handleUploadGrade}
-                    >
-                        Upload My Grade
-                    </button>
-                </div>
+{/* Grades Management Section */}
+<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {/* Upload My Grade */}
+    <div className="bg-green-50 p-4 rounded-lg border border-green-200 shadow-sm hover:shadow-lg transition-shadow">
+        <h3 className="text-xl font-semibold flex items-center text-green-700">
+            <HiUpload className="mr-2 text-green-600" /> Upload My Grade
+        </h3>
+        <p className="mt-2 text-gray-600">
+            Upload your grades to keep track of your academic progress.
+        </p>
+        <button
+            className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors"
+            onClick={handleUploadGrade}
+        >
+            Upload My Grade
+        </button>
+    </div>
 
-                {/* View My Grade */}
-                <div className="bg-gray-100 p-4 rounded-lg border border-gray-300 shadow-sm hover:shadow-lg transition-shadow">
-                    <h3 className="text-xl font-semibold flex items-center">
-                        <HiEye className="mr-2 text-blue-500" /> View My Grade
-                    </h3>
-                    <p className="mt-2 text-gray-600">
-                        View the grades you've uploaded to monitor your academic performance.
-                    </p>
-                    <button
-                        className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
-                        onClick={handleViewGrades}
-                    >
-                        View My Grade
-                    </button>
-                </div>
-            </div>
+    {/* View My Grade */}
+    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 shadow-sm hover:shadow-lg transition-shadow">
+        <h3 className="text-xl font-semibold flex items-center text-blue-700">
+            <HiEye className="mr-2 text-blue-600" /> View My Grade
+        </h3>
+        <p className="mt-2 text-gray-600">
+            View the grades you've uploaded to monitor your academic performance.
+        </p>
+        <button
+            className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
+            onClick={handleViewGrades}
+        >
+            View My Grade
+        </button>
+    </div>
+</div>
+
 
 
             {showViewGradesModal && (
