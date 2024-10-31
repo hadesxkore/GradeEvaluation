@@ -1,250 +1,368 @@
 import React, { useState, useEffect } from 'react';
-import { HiUpload, HiEye, HiCheckCircle, HiPlusCircle, HiSave, HiXCircle, HiDocumentText  } from 'react-icons/hi';
-import { db, auth } from '../firebase';
-import { doc, setDoc, collection, getDocs, writeBatch } from 'firebase/firestore';
-import { v4 as uuidv4 } from 'uuid';
+import { HiOutlineX ,HiOutlineExclamation , HiUpload, HiEye, HiCheckCircle  } from 'react-icons/hi';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import Modal from 'react-modal';
-import { Viewer } from '@react-pdf-viewer/core';
-import '@react-pdf-viewer/core/lib/styles/index.css';
-import '@react-pdf-viewer/default-layout/lib/styles/index.css';
+import { collection, getDocs, doc, getDoc, updateDoc, setDoc  } from 'firebase/firestore';
+import { db, auth } from '../firebase'; // Ensure your Firestore instance and auth are imported
+import { toast } from 'react-toastify'; // Adjust this based on your toast library
+import { ClipLoader } from 'react-spinners';
 
 
 const UploadGrades = () => {
     const [showModal, setShowModal] = useState(false);
-    const [showInputModal, setShowInputModal] = useState(false);
-    const [showFileModal, setShowFileModal] = useState(false);
-    const [subjects, setSubjects] = useState([{ subjectName: '', grade: '' }]);
-    const [file, setFile] = useState(null);
-    const [grades, setGrades] = useState([]);
-    const [files, setFiles] = useState([]);
-    
     const [showViewGradesModal, setShowViewGradesModal] = useState(false);
-    
-    useEffect(() => {
-        if (showViewGradesModal) {
-            fetchGrades();
-        }
-    }, [showViewGradesModal]);
+    const [showSubjectsModal, setShowSubjectsModal] = useState(false);
+    const [subjects, setSubjects] = useState([]);
+    const [showSuccessModal, setShowSuccessModal] = useState(false); // State for success modal
+    const [selectedSemester, setSelectedSemester] = useState('');
+    const [yearLevel, setYearLevel] = useState('');
+    const [loading, setLoading] = useState(true);
+    const [selectedFile, setSelectedFile] = useState(null); // At the top of your component
+    const [currentUser, setCurrentUser] = useState(null);
+    const [isLoading, setIsLoading] = useState(false); // State for loading indicator
+    const [grades, setGrades] = useState([]); // State for storing uploaded grades
+    const [fileUrl, setFileUrl] = useState(''); // State for storing the file URL
+    const [showUploadMessageModal, setShowUploadMessageModal] = useState(false);
 
-    const handleUploadGrade = () => {
+
+    useEffect(() => {
+        const unsubscribe = auth.onAuthStateChanged(user => {
+            if (user) {
+                setCurrentUser(user);
+            } else {
+                setCurrentUser(null);
+                setLoading(false);
+            }
+        });
+
+        return () => unsubscribe();
+    }, []);
+
+    useEffect(() => {
+        const fetchUserLevel = async () => {
+            if (!currentUser || !currentUser.uid) {
+                console.error('Current user is not defined');
+                setLoading(false);
+                return;
+            }
+
+            try {
+                const userDocRef = doc(db, 'users', currentUser.uid);
+                const userDoc = await getDoc(userDocRef);
+
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    const level = userData.yearLevel;
+                    setYearLevel(level);
+                    console.log('Year Level:', level);
+                } else {
+                    console.error('User document not found!');
+                }
+            } catch (error) {
+                console.error('Error fetching user data:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchUserLevel();
+    }, [currentUser]);
+
+    const handleUploadGrade = async () => {
+        // Ensure current user is defined
+        if (!currentUser || !currentUser.uid) {
+            console.error('Current user is not defined');
+            return;
+        }
+    
+        // Check if the user already has uploaded grades
+        const gradesDocRef = doc(db, 'grades', currentUser.uid);
+        const gradesDocSnapshot = await getDoc(gradesDocRef);
+        
+        // If the document exists, show the upload message modal
+        if (gradesDocSnapshot.exists()) {
+            setShowUploadMessageModal(true); // Show the modal if grades already exist
+            return; // Exit the function to prevent further actions
+        }
+    
+        // Show the modal for uploading grades
         setShowModal(true);
     };
-
-   
-    const handleCloseModal = () => {
-        setShowModal(false);
-        setShowInputModal(false);
-        setShowFileModal(false);
-        setShowViewGradesModal(false);
-    };
-    const handleInputUpload = () => {
-        setShowModal(false);
-        setShowInputModal(true);
-    };
-
-    const handleFileUpload = () => {
-        setShowModal(false);
-        setShowFileModal(true);
-    };
-
-    const handleSaveGrade = async () => {
-        const userId = auth.currentUser?.uid;
     
-        if (subjects.every((entry) => entry.subjectName && entry.grade)) {
-            try {
-                // Use writeBatch instead of db.batch()
-                const batch = writeBatch(db);
-    
-                subjects.forEach(({ subjectName, grade }) => {
-                    const gradeId = uuidv4();
-                    const gradeRef = doc(db, 'grades', userId, 'subjects', gradeId);
-                    batch.set(gradeRef, { subjectName, grade });
-                });
-    
-                await batch.commit();
-                alert('Grades saved successfully!');
-                setSubjects([{ subjectName: '', grade: '' }]);
-                handleCloseModal();
-            } catch (error) {
-                console.error('Error saving grades:', error);
-                alert('Failed to save the grades. Please try again.');
-            }
-        } else {
-            alert('Please provide both subject name and grade for each entry.');
-        }
-    };
 
-    const handleAddSubject = () => {
-        setSubjects([...subjects, { subjectName: '', grade: '' }]);
-    };
-
-    const handleInputChange = (index, field, value) => {
-        const updatedSubjects = [...subjects];
-        updatedSubjects[index][field] = value;
-        setSubjects(updatedSubjects);
-    };
-
-    const handleRemoveSubject = (index) => {
-        const updatedSubjects = subjects.filter((_, i) => i !== index);
-        setSubjects(updatedSubjects);
-    };
-
-    const handleFileChange = (event) => {
-        if (event.target.files[0]) {
-            setFile(event.target.files[0]);
-        }
-    };
-
-    const handleSaveFile = async () => {
-        if (file) {
-            const userId = auth.currentUser?.uid;
-            const fileId = uuidv4();
-    
-            try {
-                const storage = getStorage();
-                const fileRef = ref(storage, `grades/${userId}/files/${fileId}_${file.name}`);
-    
-                // Upload the file to Firebase Storage
-                await uploadBytes(fileRef, file);
-    
-                // Get the download URL
-                const fileUrl = await getDownloadURL(fileRef);
-    
-                // Store the file metadata including the download URL in Firestore
-                await setDoc(doc(db, 'grades', userId, 'files', fileId), {
-                    fileName: file.name,
-                    fileType: file.type,
-                    fileUrl, // Store the URL of the uploaded file
-                    uploadedAt: new Date(),
-                });
-    
-                alert('File uploaded successfully!');
-                setFile(null);
-                handleCloseModal();
-            } catch (error) {
-                console.error('Error uploading file:', error);
-                alert('Failed to upload the file. Please try again.');
-            }
-        } else {
-            alert('Please select a file to upload.');
-        }
+    const handleViewGrades = async () => {
+        await fetchGrades(); // Fetch grades before opening the modal
+        setShowViewGradesModal(true);
     };
 
     const fetchGrades = async () => {
-        const userId = auth.currentUser?.uid;
+        if (!currentUser || !currentUser.uid) {
+            console.error('Current user is not defined');
+            return;
+        }
+    
         try {
-            const subjectsSnapshot = await getDocs(collection(db, 'grades', userId, 'subjects'));
-            const filesSnapshot = await getDocs(collection(db, 'grades', userId, 'files'));
-
-            const subjectsData = subjectsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            const filesData = filesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-            setGrades(subjectsData);
-            setFiles(filesData);
+            // Reference to the user's grades document
+            const gradesDocRef = doc(db, 'grades', currentUser.uid);
+            const gradesDoc = await getDoc(gradesDocRef);
+    
+            if (!gradesDoc.exists()) {
+                console.warn(`Grades document does not exist for user ID: ${currentUser.uid}`);
+                // Optionally create the document with default values
+                await setDoc(gradesDocRef, {}); // Create an empty document
+                console.log(`Empty grades document created for user ID: ${currentUser.uid}`);
+                return; // Exit the function if no grades document exists
+            }
+    
+            const yearLevelCollectionRef = collection(gradesDocRef, yearLevel); // Reference to the user's year level
+            
+            // Fetch data for the first and second semester
+            const firstSemesterDocRef = doc(yearLevelCollectionRef, 'firstSemester');
+            const secondSemesterDocRef = doc(yearLevelCollectionRef, 'secondSemester');
+    
+            const allGrades = [];
+    
+            // Handle first semester grades
+            const firstSemesterDoc = await getDoc(firstSemesterDocRef);
+            if (firstSemesterDoc.exists()) {
+                const firstSemesterData = firstSemesterDoc.data();
+                const firstSemesterGrades = firstSemesterData.grades || [];
+                allGrades.push(...firstSemesterGrades.map((grade, index) => ({
+                    id: `firstSemester-${index}`, // Unique ID for each grade
+                    ...grade,
+                })));
+            } else {
+                console.warn(`First semester grades document does not exist for user ID: ${currentUser.uid}`);
+            }
+    
+            // Handle second semester grades
+            const secondSemesterDoc = await getDoc(secondSemesterDocRef);
+            if (secondSemesterDoc.exists()) {
+                const secondSemesterData = secondSemesterDoc.data();
+                const secondSemesterGrades = secondSemesterData.grades || [];
+                allGrades.push(...secondSemesterGrades.map((grade, index) => ({
+                    id: `secondSemester-${index}`, // Unique ID for each grade
+                    ...grade,
+                })));
+            } else {
+                console.warn(`Second semester grades document does not exist for user ID: ${currentUser.uid}`);
+            }
+    
+            // Store all grades in state
+            setGrades(allGrades); 
+            setFileUrl(firstSemesterDoc.data().fileUrl || ''); // Set the file URL from the first semester document
         } catch (error) {
             console.error('Error fetching grades:', error);
-            alert('Failed to load grades.');
         }
     };
-
-    const handleViewGrades = () => {
-        setShowViewGradesModal(true);
+    
+    
+    const handleCloseModal = () => {
+        setShowModal(false);
+        setShowViewGradesModal(false);
+        setShowSubjectsModal(false);
+        setSubjects([]);
+        setSelectedSemester('');
     };
+
+
+    const handleSaveGrades = async () => {
+        if (!currentUser || !currentUser.uid) {
+            console.error('Current user is not defined');
+            return;
+        }
+    
+        // Check if a file has been selected before proceeding
+        if (!selectedFile) {
+            toast.error("Please upload a file for verification before saving grades.");
+            return; // Exit the function if no file is selected
+        }
+    
+        setIsLoading(true); // Start loading
+    
+        try {
+            const storage = getStorage(); // Initialize Firebase Storage
+    
+            // Create a new document reference under the grades collection for the current user
+            const gradesDocRef = doc(db, 'grades', currentUser.uid); // This is the document for the user's grades
+    
+            // Create a subcollection for the year level under the user's grades document
+            const yearLevelCollectionRef = collection(gradesDocRef, yearLevel); // yearLevel is a string, e.g., "1st year"
+    
+            // For each semester, we should create a document rather than a subcollection
+            const semesterDocRef = doc(yearLevelCollectionRef, selectedSemester === '1st' ? 'firstSemester' : 'secondSemester'); 
+    
+            // Set up the semester document to hold the grades
+            await setDoc(semesterDocRef, { fileUrl: '' }); // Initialize with an empty fileUrl
+    
+            // Upload the file to Firebase Storage
+            const storageRef = ref(storage, `uploads/${selectedFile.name}`);
+            await uploadBytes(storageRef, selectedFile);
+            const fileUrl = await getDownloadURL(storageRef); // Get the file URL
+    
+            // Loop through subjects and save each grade in the semester document
+            const gradesData = []; // Array to hold all grades for the semester
+    
+            for (const subject of subjects) {
+                const { courseTitle, courseCode, preRequisite, grade, status } = subject;
+    
+                // Create an entry for each subject
+                gradesData.push({
+                    courseTitle,
+                    courseCode,
+                    preRequisite,
+                    grade,
+                    status,
+                });
+            }
+    
+            // Update the semester document with the grades data and file URL
+            await setDoc(semesterDocRef, {
+                grades: gradesData,
+                fileUrl, // Set the file URL
+            }, { merge: true }); // Use merge to update without overwriting
+    
+            // Show success modal on successful save
+            setShowSuccessModal(true);
+            setShowSubjectsModal(false);
+            setShowModal(false);
+            setSubjects([]); // Clear the subjects state
+            setSelectedFile(null); // Clear selected file after saving
+        } catch (error) {
+            console.error('Error saving grades:', error);
+            toast.error("An error occurred while saving grades.");
+        } finally {
+            setIsLoading(false); // Stop loading
+        }
+    };
+    
+    
+    const fetchSubjects = async (semester) => {
+        if (!yearLevel) {
+            console.error('Year Level is not defined');
+            return;
+        }
+    
+        const trimmedLevel = yearLevel.trim();
+        const formattedLevel = trimmedLevel.replace(/\s+/g, '').replace(/year/i, '') + 'Year';
+    
+        const semCollection = semester === '1st' ? 'firstSemester' : 'secondSemester';
+    
+        if (formattedLevel) {
+            const path = `subjects/${formattedLevel}/${semCollection}`; // Adjusted path to include semester
+    
+            try {
+                const subjectsRef = collection(db, path);
+                const querySnapshot = await getDocs(subjectsRef);
+    
+                if (querySnapshot.empty) {
+                    console.warn('No subjects found for the selected semester.');
+                } else {
+                    const subjectsList = querySnapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data(),
+                    }));
+                    setSubjects(subjectsList);
+                    setShowSubjectsModal(true);
+                }
+            } catch (error) {
+                console.error('Error fetching subjects:', error);
+            }
+        } else {
+            console.error('Invalid year level for fetching subjects');
+        }
+    };
+    
+    const handleSemesterSelection = (semester) => {
+        fetchSubjects(semester);
+        setSelectedSemester(semester);
+    };
+    
+    const handleGradeChange = (index, value) => {
+        // Validate input (not necessary for dropdown values here, but kept for structure)
+        const gradeValue = parseFloat(value); // Convert to float for comparison
+        if (isNaN(gradeValue) || gradeValue < 1 || gradeValue > 5) {
+            alert('Please enter a grade between 1 and 5.');
+            return; // Exit if invalid
+        }
+    
+        const updatedSubjects = [...subjects];
+        updatedSubjects[index] = {
+            ...updatedSubjects[index],
+            grade: value, // Store the grade as a string for dropdown
+            status: gradeValue <= 3 ? 'PASSED' : 'FAILED', // Determine status based on the numeric value
+        };
+        setSubjects(updatedSubjects);
+    };
+    
+
+    if (loading) {
+        return <div>Loading...</div>;
+    }
+
     return (
         <div className="p-5 bg-white rounded-lg shadow-md">
             <h2 className="text-2xl font-semibold mb-3 text-gray-800">Manage Grades</h2>
-<p className="mb-4 text-gray-700">
-    Easily upload and view your grades using the options below.
-</p>
+            <p className="mb-4 text-gray-700">
+                Easily upload and view your grades using the options below.
+            </p>
 
-{/* Grades Management Section */}
-<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-    {/* Upload My Grade */}
-    <div className="bg-green-50 p-4 rounded-lg border border-green-200 shadow-sm hover:shadow-lg transition-shadow">
-        <h3 className="text-xl font-semibold flex items-center text-green-700">
-            <HiUpload className="mr-2 text-green-600" /> Upload My Grade
-        </h3>
-        <p className="mt-2 text-gray-600">
-            Upload your grades to keep track of your academic progress.
-        </p>
-        <button
-            className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors"
-            onClick={handleUploadGrade}
-        >
-            Upload My Grade
-        </button>
-    </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-green-50 p-4 rounded-lg border border-green-200 shadow-sm hover:shadow-lg transition-shadow">
+                    <h3 className="text-xl font-semibold flex items-center text-green-700">
+                        <HiUpload className="mr-2 text-green-600" /> Upload My Grade
+                    </h3>
+                    <p className="mt-2 text-gray-600">
+                        Upload your grades to keep track of your academic progress.
+                    </p>
+                    <button
+                        className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors"
+                        onClick={handleUploadGrade}
+                    >
+                        Upload My Grade
+                    </button>
+                </div>
 
-    {/* View My Grade */}
-    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 shadow-sm hover:shadow-lg transition-shadow">
-        <h3 className="text-xl font-semibold flex items-center text-blue-700">
-            <HiEye className="mr-2 text-blue-600" /> View My Grade
-        </h3>
-        <p className="mt-2 text-gray-600">
-            View the grades you've uploaded to monitor your academic performance.
-        </p>
-        <button
-            className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
-            onClick={handleViewGrades}
-        >
-            View My Grade
-        </button>
-    </div>
-</div>
-
-
-
-            {showViewGradesModal && (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70">
-        <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-3xl">
-            <h3 className="text-2xl font-bold mb-6 text-gray-800">My Grades</h3>
-            <table className="w-full mb-6 table-auto border-collapse">
-                <thead>
-                    <tr className="bg-gray-300">
-                        <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 border-b">Subject</th>
-                        <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 border-b">Grade</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {grades.map((grade) => (
-                        <tr key={grade.id} className="hover:bg-gray-100">
-                            <td className="px-6 py-4 border-b">{grade.subjectName}</td>
-                            <td className="px-6 py-4 border-b">{grade.grade}</td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-            <h3 className="text-xl font-semibold mb-4 text-gray-800">Uploaded Files</h3>
-            <ul className="mb-6">
-    {files.map((file) => (
-        <li key={file.id} className="mb-3">
-            <div className="flex items-center justify-between">
-                <span className="text-gray-700">{file.fileName}</span>
-                <div className="ml-4">
-                    {file.fileUrl.endsWith('.pdf') ? (
-                        <div className="w-full h-64 mt-2">
-                            <Viewer fileUrl={file.fileUrl} />
-                        </div>
-                    ) : (
-                        <a
-                            href={file.fileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="bg-red-600 text-white px-3 py-2 rounded hover:bg-red-700 transition duration-300 flex items-center"
-                        >
-                            <span className="mr-1">View</span>
-                            <HiEye className="h-4 w-4" />
-                        </a>
-                    )}
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 shadow-sm hover:shadow-lg transition-shadow">
+                    <h3 className="text-xl font-semibold flex items-center text-blue-700">
+                        <HiEye className="mr-2 text-blue-600" /> View My Grade
+                    </h3>
+                    <p className="mt-2 text-gray-600">
+                        View the grades you've uploaded to monitor your academic performance.
+                    </p>
+                    <button
+                        className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
+                        onClick={handleViewGrades}
+                    >
+                        View My Grade
+                    </button>
                 </div>
             </div>
-        </li>
-    ))}
-</ul>
 
+
+
+
+{/* Upload Grades Modal */}
+{showModal && (
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="bg-white p-6 rounded-lg shadow-lg w-96 max-w-full overflow-hidden">
+            <h3 className="text-xl font-bold text-center mb-4">Select Semester</h3>
+            <div className="relative mb-4">
+                <select
+                    className="block appearance-none w-full bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-lg shadow focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onChange={(e) => handleSemesterSelection(e.target.value)}
+                >
+                    <option value="" disabled selected>Select a semester</option>
+                    <option value="1st">1st Semester</option>
+                    <option value="2nd">2nd Semester</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 10l5 5 5-5H7z" />
+                    </svg>
+                </div>
+            </div>
             <button
-                className="mt-4 w-full bg-red-600 text-white px-4 py-2 rounded transition duration-300 hover:bg-red-700"
+                className="mt-4 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors w-full"
                 onClick={handleCloseModal}
             >
                 Close
@@ -253,128 +371,218 @@ const UploadGrades = () => {
     </div>
 )}
 
-
-
-           {/* Modal for selecting upload method */}
-{showModal && (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-        <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-            <h3 className="text-xl font-bold text-center mb-4">Choose Upload Method</h3>
-            <div className="space-y-3">
+{showSubjectsModal && (
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 transition-opacity duration-300">
+        <div className="bg-gradient-to-b from-white to-gray-100 p-6 rounded-lg shadow-lg w-full max-w-3xl overflow-hidden">
+            <div className="flex justify-between items-center mb-4 border-b pb-3">
+                <h3 className="text-xl font-bold text-gray-800">{`Subjects for ${selectedSemester} Semester`}</h3>
                 <button
-                    className="flex items-center justify-center w-full mb-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition duration-300"
-                    onClick={handleInputUpload}
+                    onClick={handleCloseModal}
+                    className="text-gray-600 hover:text-red-600 transition duration-200"
+                    aria-label="Close Modal"
                 >
-                    <HiDocumentText className="mr-2 h-5 w-5" /> {/* Icon for Input Upload */}
-                    Upload via Input
+                    &times; {/* Close icon */}
                 </button>
+            </div>
+            <table className="min-w-full border-collapse text-sm">
+                <thead className="bg-gray-200">
+                    <tr>
+                        <th className="border border-gray-300 px-4 py-2 text-left">Course Code</th>
+                        <th className="border border-gray-300 px-4 py-2 text-left">Course Title</th>
+                        <th className="border border-gray-300 px-4 py-2 text-left">Prerequisites</th>
+                        <th className="border border-gray-300 px-4 py-2 text-left">Grade</th>
+                        <th className="border border-gray-300 px-4 py-2 text-left">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {subjects.map((subject, index) => (
+                        <tr key={subject.id} className="hover:bg-gray-100 transition-colors even:bg-gray-50 cursor-pointer">
+                            <td className="border border-gray-300 px-4 py-2 font-bold">{subject.courseCode}</td>
+                            <td className="border border-gray-300 px-4 py-2">{subject.courseTitle}</td>
+                            <td className="border border-gray-300 px-4 py-2">{subject.preRequisite || ''}</td>
+                            <td className="border border-gray-300 px-4 py-2">
+    <select
+        value={subject.grade || ''}
+        onChange={(e) => handleGradeChange(index, e.target.value)}
+        className="border border-gray-300 px-2 py-1 rounded focus:outline-none focus:ring-2 focus:ring-blue-400 transition duration-150"
+        aria-label={`Grade for ${subject.courseCode}`}
+    >
+        <option value="" disabled>Select Grade</option>
+        <option value="1">1.00</option>
+        <option value="1.25">1.25</option>
+        <option value="1.50">1.50</option>
+        <option value="1.75">1.75</option>
+        <option value="2">2.00</option>
+        <option value="2.25">2.25</option>
+        <option value="2.50">2.50</option>
+        <option value="2.75">2.75</option>
+        <option value="3">3.00</option>
+        <option value="3.25">3.25</option>
+        <option value="3.50">3.50</option>
+        <option value="3.75">3.75</option>
+        <option value="4">4.00</option>
+        <option value="5">5.00</option>
+    </select>
+</td>
+
+                            <td className="border border-gray-300 px-4 py-2">
+                                <span className={`${subject.status === 'PASSED' ? 'text-green-600' : 'text-red-600'}`}>
+                                    {subject.status || ''}
+                                </span>
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+            <div className="mt-4">
+                <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,.txt"
+                    onChange={(e) => setSelectedFile(e.target.files[0])}
+                    className="border border-gray-300 px-2 py-1 rounded focus:outline-none focus:ring-2 focus:ring-blue-400 transition duration-150"
+                    aria-label="Upload File"
+                />
+                <span className="text-red-600 ml-2">
+                    Please upload a PDF of your grades for verification.
+                </span>
+            </div>
+            <div className="flex justify-end mt-4 space-x-2">
                 <button
-                    className="flex items-center justify-center w-full bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition duration-300"
-                    onClick={handleFileUpload}
-                >
-                    <HiUpload className="mr-2 h-5 w-5" /> {/* Icon for File Upload */}
-                    Upload via File
-                </button>
-                <button
-                    className="mt-4 w-full bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 transition duration-300"
+                    className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-500 transition-colors"
                     onClick={handleCloseModal}
                 >
                     Cancel
                 </button>
-            </div>
-        </div>
-    </div>
-)}
-
-          
-{/* Modal for input-based grade upload */}
-{showInputModal && (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-        <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-            <h3 className="text-xl font-bold text-center mb-4">Add Subjects and Grades</h3>
-            <div className={`grid ${subjects.length > 2 ? 'grid-cols-3' : 'grid-cols-1'} gap-4`}>
-                {subjects.map((subject, index) => (
-                    <div key={index} className="flex flex-col mb-2">
-                        <input
-                            type="text"
-                            className="w-full p-2 border border-gray-300 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Subject Name"
-                            value={subject.subjectName}
-                            onChange={(e) =>
-                                handleInputChange(index, 'subjectName', e.target.value)
-                            }
-                        />
-                        <input
-                            type="text"
-                            className="w-full p-2 border border-gray-300 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"
-                            placeholder="Grade"
-                            value={subject.grade}
-                            onChange={(e) =>
-                                handleInputChange(index, 'grade', e.target.value)
-                            }
-                        />
-                        {subjects.length > 1 && (
-                            <button
-                                className="text-red-500 text-sm mt-1 hover:underline"
-                                onClick={() => handleRemoveSubject(index)}
-                            >
-                                <HiXCircle className="inline mr-1" />
-                                Remove
-                            </button>
-                        )}
-                    </div>
-                ))}
-            </div>
-            <div className="flex flex-col gap-2 mt-4">
                 <button
-                    className="flex items-center justify-center w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition duration-300"
-                    onClick={handleAddSubject}
+                    className={`bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-500 transition-colors shadow-lg ${!selectedFile ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onClick={handleSaveGrades}
+                    disabled={!selectedFile} // Disable button if no file is selected
                 >
-                    <HiPlusCircle className="mr-2 h-5 w-5" />
-                    Add More Subject
-                </button>
-                <button
-                    className="flex items-center justify-center w-full bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition duration-300"
-                    onClick={handleSaveGrade}
-                >
-                    <HiSave className="mr-2 h-5 w-5" />
                     Save Grades
                 </button>
+            </div>
+        </div>
+    </div>
+)}
+
+   {/* Success Modal */}
+{showSuccessModal && (
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 transition-opacity duration-300">
+        <div className="bg-white p-6 rounded-lg shadow-lg w-96 max-w-full overflow-hidden text-center"> {/* Increased width to w-96 */}
+            <div className="flex justify-center mb-4">
+                <HiCheckCircle className="text-green-500 text-7xl" /> {/* Slightly reduced icon size */}
+            </div>
+            <h3 className="text-xl font-semibold mb-2 text-gray-800">Success!</h3> {/* Reduced heading size */}
+            <p className="text-lg text-gray-700 mb-3">Your grades have been saved successfully.</p> {/* Kept paragraph size larger for readability */}
+            <button
+                className="mt-4 bg-green-600 text-white px-6 py-2 rounded-full hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
+                onClick={() => setShowSuccessModal(false)}
+            >
+                Close
+            </button> {/* Kept button padding reasonable */}
+        </div>
+    </div>
+)}
+
+{/* Loading Modal */}
+{isLoading && (
+    <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-80">
+        <div className="bg-white w-96 p-10 rounded-lg shadow-lg flex flex-col items-center text-center">
+            <ClipLoader color="#22c55e" size={60} />
+            <span className="text-2xl font-bold text-gray-800 mt-4">Saving Grades</span>
+            <p className="text-gray-600 mt-2">Please wait a moment...</p>
+            <div className="mt-6 flex items-center justify-center w-full">
+                <div className="h-1 bg-green-500 rounded-full w-3/4 animate-pulse"></div>
+            </div>
+        </div>
+    </div>
+)}
+
+
+{showViewGradesModal && (
+    <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-80 transition-opacity duration-300">
+        <div className="bg-white w-full max-w-4xl h-4/4 p-4 rounded-lg shadow-lg flex flex-col overflow-y-auto"> {/* Increased width to max-w-4xl and reduced padding */}
+            <h3 className="text-2xl font-bold mb-4 text-gray-800 text-center">Uploaded Grades</h3> {/* Reduced heading size */}
+            
+            <table className="min-w-full border-collapse border border-gray-300 mb-4">
+                <thead>
+                    <tr className="bg-gray-200">
+                        <th className="border border-gray-300 px-3 py-2 text-left text-gray-700 text-sm">Course Code</th>
+                        <th className="border border-gray-300 px-3 py-2 text-left text-gray-700 text-sm">Course Title</th>
+                        <th className="border border-gray-300 px-3 py-2 text-left text-gray-700 text-sm">Prerequisites</th> {/* New column for prerequisites */}
+                        <th className="border border-gray-300 px-3 py-2 text-left text-gray-700 text-sm">Grade</th>
+                        <th className="border border-gray-300 px-3 py-2 text-left text-gray-700 text-sm">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {grades.length > 0 ? (
+                        grades.map((grade) => (
+                            <tr key={grade.id} className="hover:bg-gray-100 transition-colors duration-200">
+                                <td className="border border-gray-300 px-3 py-1 text-sm font-semibold text-gray-800">{grade.courseCode}</td>
+                                <td className="border border-gray-300 px-3 py-1 text-sm text-gray-800">{grade.courseTitle}</td>
+                                <td className="border border-gray-300 px-3 py-1 text-sm text-gray-800">{grade.preRequisite}</td> {/* New cell for prerequisites */}
+                                <td className="border border-gray-300 px-3 py-1 text-sm text-gray-800">{grade.grade}</td>
+                                <td className={`border border-gray-300 px-3 py-1 text-sm ${grade.status === 'PASSED' ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}`}>
+                                    {grade.status}
+                                </td>
+                            </tr>
+                        ))
+                    ) : (
+                        <tr>
+                            <td colSpan="5" className="border border-gray-300 px-4 py-2 text-center text-gray-500">No grades found.</td>
+                        </tr>
+                    )}
+                </tbody>
+            </table>
+            
+            {fileUrl && (
+                <div className="mt-4 text-center">
+                    <a
+                        href={fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 underline hover:text-blue-800 transition duration-200 text-sm" 
+                    >
+                        Click here to view your uploaded ROG file
+                    </a>
+                </div>
+            )}
+
+<div className="mt-6 flex justify-end">
                 <button
-                    className="mt-4 w-full bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 transition duration-300"
+                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm" 
                     onClick={handleCloseModal}
                 >
-                    Cancel
+                    Close
                 </button>
             </div>
         </div>
     </div>
 )}
-            {/* Modal for file-based grade upload */}
-            {showFileModal && (
-                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-                    <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-                        <h3 className="text-lg font-semibold mb-4">Upload File</h3>
-                        <input
-                            type="file"
-                            className="w-full mb-2 p-2 border rounded"
-                            onChange={handleFileChange}
-                        />
-                        <button
-                            className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-                            onClick={handleSaveFile}
-                        >
-                            Save File
-                        </button>
-                        <button
-                            className="mt-4 w-full bg-gray-300 text-gray-700 px-4 py-2 rounded"
-                            onClick={handleCloseModal}
-                        >
-                            Cancel
-                        </button>
-                    </div>
-                </div>
-            )}
+
+{showUploadMessageModal && (
+    <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-80">
+        <div className="bg-white w-3/4 max-w-md p-6 rounded-lg shadow-lg flex flex-col items-center">
+            {/* Exclamation icon at the top center */}
+            <div className="flex justify-center mb-4">
+                <HiOutlineExclamation size={50} className="text-red-600" /> {/* Increased icon size and changed to red */}
+            </div>
+            <h3 className="text-lg font-bold text-gray-800 mb-4 text-center">Upload Failed</h3>
+            <p className="text-gray-700 mb-4 text-center">
+                You have already uploaded your grades. Please check your uploaded grades in the "View My Grades" section.
+            </p>
+            <div className="flex justify-center w-full">
+                <button
+                    className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors"
+                    onClick={() => setShowUploadMessageModal(false)}
+                >
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+)}
+
         </div>
     );
 };
