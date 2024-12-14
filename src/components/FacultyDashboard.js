@@ -20,6 +20,8 @@ const FacultyDashboard = () => {
   const [isEvaluator, setIsEvaluator] = useState(false);
   const [isEvaluationDropdownOpen, setIsEvaluationDropdownOpen] = useState(false);
   const [isManageCoursesDropdownOpen, setIsManageCoursesDropdownOpen] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const navigate = useNavigate();
   const auth = getAuth();
@@ -29,6 +31,7 @@ const FacultyDashboard = () => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setIsAuthenticated(true);
+        setUserEmail(user.email); // Set the email
         const userDoc = doc(db, 'evaluators', user.uid);
         const userSnapshot = await getDoc(userDoc);
         if (userSnapshot.exists() && userSnapshot.data().role === 'evaluator') {
@@ -126,14 +129,18 @@ const FacultyDashboard = () => {
         </ul>
       </nav>
       <div className="p-6 bg-gray-50 border-t border-gray-200">
-        <button
-          onClick={openModal}
-          className="w-full flex items-center justify-center px-5 py-4 text-lg text-white bg-teal-600 rounded-lg hover:bg-teal-700 transition-colors duration-200"
-        >
-          <HiOutlineLogout className="mr-3 text-2xl" />
-          Logout
-        </button>
-      </div>
+  <p className="text-gray-800 mb-2">
+    Logged in as: <span className="text-blue-600">{userEmail}</span>
+  </p>
+  <button
+    onClick={openModal}
+    className="w-full flex items-center justify-center px-6 py-4 text-white bg-teal-600 rounded-lg shadow-lg hover:bg-teal-700 transition-colors duration-200"
+  >
+    <HiOutlineLogout className="mr-3 text-2xl" />
+    <span className="font-medium">Logout</span>
+  </button>
+</div>
+
     </aside>
  
   
