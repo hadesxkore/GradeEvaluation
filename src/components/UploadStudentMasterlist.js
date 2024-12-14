@@ -9,6 +9,7 @@ import {
     doc,
   } from "firebase/firestore";import { db } from "../firebase"; // Correct path and named import
 import { HiOutlineSave, HiOutlineChartBar, HiOutlineEye, HiPlus, HiOutlineDownload, HiOutlinePlus, HiPencil, HiTrash  } from 'react-icons/hi';
+import {  HiExclamationCircle } from "react-icons/hi";
 
 const UploadStudentMasterlist = () => {
   const [students, setStudents] = useState([]);
@@ -21,6 +22,7 @@ const UploadStudentMasterlist = () => {
   const [irregularCount, setIrregularCount] = useState(0); // State for irregular student count
   const [dropdownOpen, setDropdownOpen] = useState(false); // State to track dropdown visibility
   const [selectedCategory, setSelectedCategory] = useState(""); // Track the selected category for dynamic count
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
    // Fetch students from Firestore
    useEffect(() => {
@@ -129,6 +131,11 @@ const UploadStudentMasterlist = () => {
         setDropdownOpen(!dropdownOpen);
       };
     
+
+
+  const toggleModal = () => {
+    setIsModalOpen(!isModalOpen);
+  };
   return (
     <div className="p-5">
 {/* Main Card for Section Management */}
@@ -155,20 +162,44 @@ const UploadStudentMasterlist = () => {
 
     {/* Create Section */}
     <div className="bg-gradient-to-r from-teal-50 to-teal-100 p-4 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-      <h3 className="text-xl font-semibold flex items-center">
-        <HiPlus className="mr-2 text-teal-500" /> Export Data
-      </h3>
-      <p className="mt-2 text-gray-600">Export the data inside the table</p>
-     
-      <button
-        className="mt-4 bg-gradient-to-r from-amber-400 to-amber-600 text-white px-6 py-3 rounded-lg shadow-md hover:from-amber-500 hover:to-amber-700 transition duration-200"
-      >
-        Export 
-      </button>
-    </div>
+        <h3 className="text-xl font-semibold flex items-center">
+          <HiPlus className="mr-2 text-teal-500" /> Export Data
+        </h3>
+        <p className="mt-2 text-gray-600">Export the data inside the table</p>
+
+        <button
+          onClick={toggleModal}
+          className="mt-4 bg-gradient-to-r from-amber-400 to-amber-600 text-white px-6 py-3 rounded-lg shadow-md hover:from-amber-500 hover:to-amber-700 transition duration-200"
+        >
+          Export
+        </button>
+      </div>
     </div>
     </div>
 
+
+ {/* Redesigned Modal */}
+{isModalOpen && (
+  <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+    <div className="bg-white w-96 rounded-xl shadow-lg p-8 relative">
+      <div className="text-center">
+        <HiExclamationCircle className="text-amber-400 text-7xl mx-auto mb-4" />
+        <h3 className="text-2xl font-semibold text-gray-900">
+          Feature Coming Soon
+        </h3>
+        <p className="mt-3 text-gray-500">
+          We're working on this feature. Stay tuned for updates!
+        </p>
+      </div>
+      <button
+        onClick={toggleModal}
+        className="mt-6 w-full bg-gray-900 text-white py-3 rounded-lg hover:bg-gray-700 focus:ring-2 focus:ring-amber-400 transition"
+      >
+        Close
+      </button>
+    </div>
+  </div>
+)}
 
 {showTable && (
   <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-10xl">

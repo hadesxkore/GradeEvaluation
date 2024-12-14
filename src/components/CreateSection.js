@@ -895,99 +895,106 @@ const confirmDelete = async () => {
 )}
 
 
-
-{/* Modal for editing student info */}
+{/* Modernized Modal for Editing Student Info */}
 {isStudentDetailsModalOpen && selectedStudent && (
-  <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex justify-center items-center">
-    <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-lg">
-      <h3 className="text-3xl font-semibold mb-6 text-center text-gray-800">Edit Student Information</h3>
-      <form className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
-      <div>
-        <label className="block mb-2 font-medium text-gray-800 text-lg">First Name</label>
-        <input
-          type="text"
-          value={selectedStudent.firstName}
-          onChange={(e) => handleNameChange(e, "firstName")}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-600"
-          placeholder="Enter First Name"
-        />
-      </div>
-
-      <div>
-        <label className="block mb-2 font-medium text-gray-800 text-lg">Middle Name</label>
-        <input
-          type="text"
-          value={selectedStudent.middleName}
-          onChange={(e) => handleNameChange(e, "middleName")}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-600"
-          placeholder="Enter Middle Name"
-        />
-      </div>
-
-      <div>
-        <label className="block mb-2 font-medium text-gray-800 text-lg">Last Name</label>
-        <input
-          type="text"
-          value={selectedStudent.lastName}
-          onChange={(e) => handleNameChange(e, "lastName")}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-600"
-          placeholder="Enter Last Name"
-        />
-      </div>
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-8">
+      <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">Edit Student Information</h3>
+      <form className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div>
-  <label className="block mb-2 font-medium text-gray-800 text-lg">Year Level</label>
-  <select
-    value={selectedStudent.yearLevel}
-    onChange={(e) => setSelectedStudent({ ...selectedStudent, yearLevel: e.target.value })}
-    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-600"
-  >
-    <option value="">Select Year Level</option>
-    <option value="1st year">1st Year</option>
-    <option value="2nd year">2nd Year</option>
-    <option value="3rd year">3rd Year</option>
-    <option value="4th year">4th Year</option>
-  </select>
-</div>
+          <label className="block mb-2 text-sm font-medium text-gray-700">First Name</label>
+          <input
+            type="text"
+            value={selectedStudent.firstName}
+            onChange={(e) => handleNameChange(e, "firstName")}
+            className="w-full px-4 py-2 border rounded-lg focus:ring focus:ring-blue-500 focus:outline-none"
+            placeholder="First Name"
+          />
+        </div>
 
-<div>
-        <label className="block mb-2 font-medium text-gray-800 text-lg">Contact Number</label>
-        <input
-          type="text"
-          value={selectedStudent.contactNumber}
-          onChange={handleContactNumberChange}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-600"
-          placeholder="Enter Contact Number"
-        />
-      </div>
-        
         <div>
-          <label className="block mb-2 font-medium text-gray-800 text-lg">Program</label>
+          <label className="block mb-2 text-sm font-medium text-gray-700">Middle Name</label>
+          <input
+            type="text"
+            value={selectedStudent.middleName}
+            onChange={(e) => handleNameChange(e, "middleName")}
+            className="w-full px-4 py-2 border rounded-lg focus:ring focus:ring-blue-500 focus:outline-none"
+            placeholder="Middle Name"
+          />
+        </div>
+
+        <div>
+          <label className="block mb-2 text-sm font-medium text-gray-700">Last Name</label>
+          <input
+            type="text"
+            value={selectedStudent.lastName}
+            onChange={(e) => handleNameChange(e, "lastName")}
+            className="w-full px-4 py-2 border rounded-lg focus:ring focus:ring-blue-500 focus:outline-none"
+            placeholder="Last Name"
+          />
+        </div>
+
+        <div>
+          <label className="block mb-2 text-sm font-medium text-gray-700">Year Level</label>
+          <select
+            value={selectedStudent.yearLevel}
+            onChange={(e) => setSelectedStudent({ ...selectedStudent, yearLevel: e.target.value })}
+            className="w-full px-4 py-2 border rounded-lg focus:ring focus:ring-blue-500 focus:outline-none"
+          >
+            <option value="">Select Year Level</option>
+            <option value="1st year">1st Year</option>
+            <option value="2nd year">2nd Year</option>
+            <option value="3rd year">3rd Year</option>
+            <option value="4th year">4th Year</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block mb-2 text-sm font-medium text-gray-700">Contact Number</label>
+          <input
+            type="text"
+            value={selectedStudent.contactNumber}
+            onChange={handleContactNumberChange}
+            className="w-full px-4 py-2 border rounded-lg focus:ring focus:ring-blue-500 focus:outline-none"
+            placeholder="Contact Number"
+          />
+        </div>
+
+        <div>
+          <label className="block mb-2 text-sm font-medium text-gray-700">Program</label>
           <input
             type="text"
             value={selectedStudent.program}
             onChange={(e) => setSelectedStudent({ ...selectedStudent, program: e.target.value })}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-600"
-            placeholder="Enter Program"
+            className="w-full px-4 py-2 border rounded-lg focus:ring focus:ring-blue-500 focus:outline-none"
+            placeholder="Program"
           />
         </div>
-        
-        <div>
-          <label className="block mb-2 font-medium text-gray-800 text-lg">Address</label>
+
+        <div className="col-span-2">
+          <label className="block mb-2 text-sm font-medium text-gray-700">Address</label>
           <input
             type="text"
             value={selectedStudent.address}
             onChange={(e) => setSelectedStudent({ ...selectedStudent, address: e.target.value })}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-600"
-            placeholder="Enter Address"
+            className="w-full px-4 py-2 border rounded-lg focus:ring focus:ring-blue-500 focus:outline-none"
+            placeholder="Address"
           />
         </div>
 
-        <div className="col-span-2 flex justify-end mt-6">
-          <button type="button" onClick={() => setIsStudentDetailsModalOpen(false)} className="bg-gray-500 text-white px-4 py-2 rounded-lg mr-2 text-lg">
+        <div className="col-span-2 flex justify-end gap-4 mt-4">
+          <button
+            type="button"
+            onClick={() => setIsStudentDetailsModalOpen(false)}
+            className="px-5 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+          >
             Cancel
           </button>
-          <button type="button" onClick={handleUpdateStudentDetails} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-lg">
+          <button
+            type="button"
+            onClick={handleUpdateStudentDetails}
+            className="px-5 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-500 transition"
+          >
             Update
           </button>
         </div>
