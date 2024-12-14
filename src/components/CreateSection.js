@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Modal from 'react-modal';
-import { HiOutlineSave, HiOutlineXCircle, HiOutlineEye, HiPlus, HiOutlineX, HiCheckCircle, HiPencil, HiTrash  } from 'react-icons/hi';
+import { HiOutlineSave, HiOutlineXCircle, HiOutlineEye, HiPlus, HiOutlineX, HiCheckCircle, HiPencil, HiTrash, HiX  } from 'react-icons/hi';
 import { db } from '../firebase'; // Import the initialized Firestore
 import { collection, addDoc, getDocs, deleteDoc } from 'firebase/firestore';
 import { query, where } from 'firebase/firestore'; // Import query and where
@@ -42,6 +42,12 @@ const [studentToDelete, setStudentToDelete] = useState(null);
   const [students, setStudents] = useState([]); // State to hold student data
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false); // State for student modal
   const [isSectionsModalOpen, setIsSectionsModalOpen] = useState(false); // State for sections modal
+  const [isSubmissionSuccessful, setIsSubmissionSuccessful] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [modalType, setModalType] = useState('');  // 'success' or 'error'
+
+
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => {
     setIsModalOpen(false);
@@ -66,21 +72,41 @@ const [studentToDelete, setStudentToDelete] = useState(null);
   const toggleSections = () => {
     setShowSections(prevState => !prevState);
   };
+
+  const handleContactNumberChange = (e) => {
+    let value = e.target.value;
+
+    // Allow only digits and ensure the contact number starts with '09'
+    if (/^\d*$/.test(value)) {
+      if (value.length <= 11) {
+        if (value.length === 1 && value !== "0" && value !== "9") {
+          value = "09"; // Automatically start with "09"
+        } else if (value.length === 2 && value !== "09") {
+          value = "09"; // Enforce "09" if first two digits aren't "09"
+        }
+        setSelectedStudent({
+          ...selectedStudent,
+          contactNumber: value,
+        });
+      }
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
     // Basic validation
     if (!className || !subjectCode || !subjectDescription || !units || !schedule || !room || !instructor || !section) {
       setError('All fields are required');
       return;
     }
-
+  
     // Clear error
     setError('');
-
+  
     try {
       // Add new section to Firestore
-      await addDoc(collection(db, 'sections'), { // Use db instead of firestore
+      await addDoc(collection(db, 'sections'), {
         className,
         subjectCode,
         subjectDescription,
@@ -90,9 +116,12 @@ const [studentToDelete, setStudentToDelete] = useState(null);
         instructor,
         section,
       });
-
+  
       console.log('Section created:', { className, subjectCode, subjectDescription, units, schedule, room, instructor, section });
-
+  
+      // Set success state
+      setIsSubmissionSuccessful(true);
+  
       // Close the modal after creating the section
       closeModal();
     } catch (error) {
@@ -100,6 +129,8 @@ const [studentToDelete, setStudentToDelete] = useState(null);
       setError('Error creating section. Please try again.');
     }
   };
+
+  
   const viewStudents = async () => {
     try {
       const studentsQuery = query(
@@ -122,7 +153,16 @@ const [studentToDelete, setStudentToDelete] = useState(null);
     setShowStudents(false); // Close the modal
   };
 
-
+  const handleNameChange = (e, nameField) => {
+    // Regular expression to allow only letters and spaces
+    const value = e.target.value;
+    if (/^[a-zA-Z\s]*$/.test(value)) {
+      setSelectedStudent({
+        ...selectedStudent,
+        [nameField]: value,
+      });
+    }
+  };
 // Function to fetch sections from the Firestore collection
 const fetchSections = async () => {
     try {
@@ -172,7 +212,11 @@ const handleEnrollStudent = async (sectionId, studentId) => {
       const student = students.find(student => student.id === studentId); // Assuming students is the list of all fetched students
   
       if (!student) {
-        alert('Student not found!');
+        setModalMessage('Student not found!');
+        setModalType('error');
+        setIsModalVisible(true);
+        setShowAddStudentModal(false); // Close the modal after enrollment
+
         return;
       }
   
@@ -183,8 +227,13 @@ const handleEnrollStudent = async (sectionId, studentId) => {
       const studentDoc = await getDoc(studentDocRef);
   
       if (studentDoc.exists()) {
-        alert('Student is already enrolled in this section!'); // Notify the faculty
+        setModalMessage('Student is already enrolled in this section!');
+        setModalType('error');
+        setIsModalVisible(true);
+        setShowAddStudentModal(false); // Close the modal after enrollment
+
         return; // Exit the function if already enrolled
+
       }
   
       // Add student information to the enrolled collection
@@ -201,11 +250,17 @@ const handleEnrollStudent = async (sectionId, studentId) => {
         createdAt: new Date() // Timestamp of enrollment
       });
   
-      alert('Student enrolled successfully!'); // Feedback to the user
+      setModalMessage('Student enrolled successfully!');
+      setModalType('success');
+      setIsModalVisible(true);
       setShowAddStudentModal(false); // Close the modal after enrollment
     } catch (error) {
       console.error('Error enrolling student: ', error);
-      alert('Failed to enroll student.'); // Error feedback
+      setModalMessage('Failed to enroll student.');
+      setModalType('error');
+      setIsModalVisible(true);
+      setShowAddStudentModal(false); // Close the modal after enrollment
+
     }
   };
 // Function to handle viewing students
@@ -301,6 +356,8 @@ const handleUpdateStudentDetails = async () => {
 
     // Show success modal
     setIsSuccessModalOpen(true);
+    setIsStudentDetailsModalOpen(false);
+
 
     // Close the modal after 3 seconds and refresh the student list
     setTimeout(() => {
@@ -533,6 +590,22 @@ const confirmDelete = async () => {
   </form>
 </Modal>
 
+{isSubmissionSuccessful && (
+  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="bg-white p-6 rounded-lg shadow-lg text-center">
+      <HiCheckCircle className="text-teal-600 text-6xl mx-auto mb-4" /> {/* Icon with styling */}
+      <h3 className="text-xl font-semibold text-teal-600">Success!</h3>
+      <p className="mt-2">Your section has been successfully created.</p>
+      <button
+        onClick={() => setIsSubmissionSuccessful(false)}
+        className="mt-4 bg-teal-600 text-white px-6 py-3 rounded-lg hover:bg-teal-700"
+      >
+        Close
+      </button>
+    </div>
+  </div>
+)}
+
 {showSections && (
   <div className="bg-white shadow-md rounded-lg overflow-hidden mt-4">
     <div className="overflow-x-auto">
@@ -590,21 +663,20 @@ const confirmDelete = async () => {
       </table>
     </div>
 
-
 {/* Modal for Students */}
 {isStudentsModalOpen && (
   <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
     <div className="bg-white shadow-lg rounded-lg overflow-hidden w-11/12 md:w-3/4 lg:w-2/3">
-      <div className="flex justify-between items-center px-4 py-2 border-b">
-        <h2 className="text-2xl font-semibold text-center flex-grow">{sectionName}</h2> {/* Update title to use sectionName */}
+      <div className="flex justify-between items-center px-6 py-4 border-b bg-teal-600 text-white">
+        <h2 className="text-2xl font-semibold flex-grow text-center">{sectionName}</h2> {/* Section title */}
         <button
-          className="text-gray-600 hover:text-red-500 focus:outline-none"
+          className="text-white hover:text-red-500 focus:outline-none"
           onClick={() => setIsStudentsModalOpen(false)} // Close modal function
         >
           &times;
         </button>
       </div>
-      <div className="overflow-x-auto p-4"> {/* Added padding around the table */}
+      <div className="overflow-x-auto p-6"> {/* Added padding around the table */}
         <table className="min-w-full border-collapse border border-gray-300">
           <thead className="bg-teal-600 text-white">
             <tr>
@@ -616,21 +688,19 @@ const confirmDelete = async () => {
               <th className="py-3 px-6">Contact Number</th>
               <th className="py-3 px-6">Program</th>
               <th className="py-3 px-6">Student ID</th>
-            
             </tr>
           </thead>
           <tbody className="bg-white">
             {students.map((student) => (
               <tr key={student.id} className="border-b hover:bg-gray-50 transition duration-150 ease-in-out">
-                <td className="py-2 px-4 text-center">{student.firstName}</td>
-                <td className="py-2 px-4 text-center">{student.middleName || 'N/A'}</td>
-                <td className="py-2 px-4 text-center">{student.lastName}</td>
-                <td className="py-2 px-4 text-center">{student.email}</td>
-                <td className="py-2 px-4 text-center">{student.yearLevel}</td>
-                <td className="py-2 px-4 text-center">{student.contactNumber}</td>
-                <td className="py-2 px-4 text-center">{student.program}</td>
-                <td className="py-2 px-4 text-center">{student.studentId}</td>
- 
+                <td className="py-3 px-4 text-center">{student.firstName}</td>
+                <td className="py-3 px-4 text-center">{student.middleName || 'N/A'}</td>
+                <td className="py-3 px-4 text-center">{student.lastName}</td>
+                <td className="py-3 px-4 text-center">{student.email}</td>
+                <td className="py-3 px-4 text-center">{student.yearLevel || 'N/A'}</td>
+                <td className="py-3 px-4 text-center">{student.contactNumber}</td>
+                <td className="py-3 px-4 text-center">{student.program}</td>
+                <td className="py-3 px-4 text-center">{student.studentId}</td>
               </tr>
             ))}
           </tbody>
@@ -642,38 +712,38 @@ const confirmDelete = async () => {
 
 
 
- {/* Add Student Modal */}
+{/* Add Student Modal */}
 {showAddStudentModal && (
   <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50"> {/* Dimmed background */}
-    <div className="bg-white shadow-lg rounded-lg overflow-hidden w-11/12 md:w-3/4 lg:w-2/3"> {/* Make the modal wider */}
-      <div className="flex justify-between items-center px-4 py-2 border-b"> {/* Header section for title and close button */}
-        <h2 className="text-2xl font-semibold text-center flex-grow">Enroll Students</h2>
+    <div className="bg-white shadow-xl rounded-lg overflow-hidden w-11/12 md:w-3/4 lg:w-2/3"> {/* Wider modal */}
+      <div className="flex justify-between items-center px-6 py-4 border-b border-teal-600"> {/* Header with larger padding */}
+        <h2 className="text-2xl font-semibold text-teal-600">Enroll Students</h2>
         <button 
-          className="text-gray-600 hover:text-red-500 focus:outline-none" 
-          onClick={() => setShowAddStudentModal(false)} // Function to close modal
+          className="text-teal-600 hover:text-red-500 focus:outline-none text-xl" 
+          onClick={() => setShowAddStudentModal(false)} // Close modal
         >
-          &times; {/* X mark */}
+          &times; {/* Close button */}
         </button>
       </div>
-      <div className="overflow-x-auto p-4"> {/* Added padding around the table */}
-        <table className="min-w-full border-collapse border border-gray-300">
+      <div className="overflow-x-auto p-6"> {/* Increased padding around the table */}
+        <table className="min-w-full border-collapse border border-gray-300 rounded-lg">
           <thead className="bg-teal-600 text-white">
             <tr>
-              <th className="py-3 px-6">First Name</th> {/* Increased padding */}
-              <th className="py-3 px-6">Last Name</th>  {/* Increased padding */}
-              <th className="py-3 px-6">Email</th>      {/* Increased padding */}
-              <th className="py-3 px-6">Actions</th>    {/* Increased padding */}
+              <th className="py-3 px-6 text-left">First Name</th> {/* Increased padding, aligned left */}
+              <th className="py-3 px-6 text-left">Last Name</th>  {/* Increased padding, aligned left */}
+              <th className="py-3 px-6 text-left">Email</th>      {/* Increased padding, aligned left */}
+              <th className="py-3 px-6 text-center">Actions</th>    {/* Increased padding, centered */}
             </tr>
           </thead>
           <tbody className="bg-white">
             {students.map((student) => (
-              <tr key={student.id} className="border-b hover:bg-gray-50 transition duration-150 ease-in-out">
-                <td className="py-3 px-4 text-center">{student.firstName}</td> {/* Increased padding */}
-                <td className="py-3 px-4 text-center">{student.lastName}</td>  {/* Increased padding */}
-                <td className="py-3 px-4 text-center">{student.email}</td>      {/* Increased padding */}
+              <tr key={student.id} className="border-b hover:bg-teal-50 transition duration-200 ease-in-out">
+                <td className="py-3 px-4 text-left">{student.firstName}</td> {/* Increased padding */}
+                <td className="py-3 px-4 text-left">{student.lastName}</td>  {/* Increased padding */}
+                <td className="py-3 px-4 text-left">{student.email}</td>      {/* Increased padding */}
                 <td className="py-3 px-4 text-center">
                   <button 
-                    className="bg-teal-600 text-white font-semibold py-2 px-4 rounded hover:bg-teal-700 transition duration-200"
+                    className="bg-teal-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-teal-700 transition duration-200"
                     onClick={() => handleEnrollStudent(sectionId, student.id)} // Call the function to enroll student
                   >
                     Add
@@ -692,6 +762,27 @@ const confirmDelete = async () => {
   </div>
 )}
 
+{isModalVisible && (
+  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+    <div
+      className={`bg-white p-6 rounded-lg shadow-lg text-center ${modalType === 'success' ? 'border-teal-600' : 'border-red-600'} w-80`} // Adjusted width class (w-80 for moderate width)
+    >
+      {modalType === 'success' ? (
+        <HiCheckCircle className="text-teal-600 text-6xl mx-auto mb-4" />
+      ) : (
+        <HiX className="text-red-600 text-6xl mx-auto mb-4" />
+      )}
+      <h3 className="text-xl font-semibold text-teal-600">{modalType === 'success' ? 'Success!' : 'Error!'}</h3>
+      <p className="mt-2">{modalMessage}</p>
+      <button
+        onClick={() => setIsModalVisible(false)}
+        className="mt-4 bg-teal-600 text-white px-6 py-3 rounded-lg hover:bg-teal-700"
+      >
+        Close
+      </button>
+    </div>
+  </div>
+)}
 
 {/* Student List Modal */}
 {showStudents && (
@@ -812,50 +903,38 @@ const confirmDelete = async () => {
       <h3 className="text-3xl font-semibold mb-6 text-center text-gray-800">Edit Student Information</h3>
       <form className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
-        <div>
-          <label className="block mb-2 font-medium text-gray-800 text-lg">First Name</label>
-          <input
-            type="text"
-            value={selectedStudent.firstName}
-            onChange={(e) => setSelectedStudent({ ...selectedStudent, firstName: e.target.value })}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-600"
-            placeholder="Enter First Name"
-          />
-        </div>
-        
-        <div>
-          <label className="block mb-2 font-medium text-gray-800 text-lg">Middle Name</label>
-          <input
-            type="text"
-            value={selectedStudent.middleName}
-            onChange={(e) => setSelectedStudent({ ...selectedStudent, middleName: e.target.value })}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-600"
-            placeholder="Enter Middle Name"
-          />
-        </div>
-        
-        <div>
-          <label className="block mb-2 font-medium text-gray-800 text-lg">Last Name</label>
-          <input
-            type="text"
-            value={selectedStudent.lastName}
-            onChange={(e) => setSelectedStudent({ ...selectedStudent, lastName: e.target.value })}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-600"
-            placeholder="Enter Last Name"
-          />
-        </div>
-        
-        <div>
-          <label className="block mb-2 font-medium text-gray-800 text-lg">Email</label>
-          <input
-            type="email"
-            value={selectedStudent.email}
-            onChange={(e) => setSelectedStudent({ ...selectedStudent, email: e.target.value })}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-600"
-            placeholder="Enter Email"
-          />
-        </div>
+      <div>
+        <label className="block mb-2 font-medium text-gray-800 text-lg">First Name</label>
+        <input
+          type="text"
+          value={selectedStudent.firstName}
+          onChange={(e) => handleNameChange(e, "firstName")}
+          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-600"
+          placeholder="Enter First Name"
+        />
+      </div>
 
+      <div>
+        <label className="block mb-2 font-medium text-gray-800 text-lg">Middle Name</label>
+        <input
+          type="text"
+          value={selectedStudent.middleName}
+          onChange={(e) => handleNameChange(e, "middleName")}
+          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-600"
+          placeholder="Enter Middle Name"
+        />
+      </div>
+
+      <div>
+        <label className="block mb-2 font-medium text-gray-800 text-lg">Last Name</label>
+        <input
+          type="text"
+          value={selectedStudent.lastName}
+          onChange={(e) => handleNameChange(e, "lastName")}
+          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-600"
+          placeholder="Enter Last Name"
+        />
+      </div>
         <div>
   <label className="block mb-2 font-medium text-gray-800 text-lg">Year Level</label>
   <select
@@ -871,17 +950,16 @@ const confirmDelete = async () => {
   </select>
 </div>
 
-        
-        <div>
-          <label className="block mb-2 font-medium text-gray-800 text-lg">Contact Number</label>
-          <input
-            type="text"
-            value={selectedStudent.contactNumber}
-            onChange={(e) => setSelectedStudent({ ...selectedStudent, contactNumber: e.target.value })}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-600"
-            placeholder="Enter Contact Number"
-          />
-        </div>
+<div>
+        <label className="block mb-2 font-medium text-gray-800 text-lg">Contact Number</label>
+        <input
+          type="text"
+          value={selectedStudent.contactNumber}
+          onChange={handleContactNumberChange}
+          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-600"
+          placeholder="Enter Contact Number"
+        />
+      </div>
         
         <div>
           <label className="block mb-2 font-medium text-gray-800 text-lg">Program</label>

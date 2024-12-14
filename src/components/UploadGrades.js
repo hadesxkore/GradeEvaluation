@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { HiOutlineX ,HiOutlineExclamation , HiUpload, HiEye, HiCheckCircle  } from 'react-icons/hi';
+import { HiOutlineX ,HiOutlineExclamation , HiUpload, HiEye, HiCheckCircle, HiExclamation   } from 'react-icons/hi';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { collection, getDocs, doc, getDoc, updateDoc, setDoc  } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, updateDoc, setDoc, deleteDoc  } from 'firebase/firestore';
 import { db, auth } from '../firebase'; // Ensure your Firestore instance and auth are imported
 import { toast } from 'react-toastify'; // Adjust this based on your toast library
 import { ClipLoader } from 'react-spinners';
@@ -20,9 +20,17 @@ const UploadGrades = () => {
     const [currentUser, setCurrentUser] = useState(null);
     const [isLoading, setIsLoading] = useState(false); // State for loading indicator
     const [grades, setGrades] = useState([]); // State for storing uploaded grades
+    const [showEnrollCoursesModal, setShowEnrollCoursesModal] = useState(false);
+const [coursesToEnroll, setCoursesToEnroll] = useState([]); // State for eligible courses
     const [fileUrl, setFileUrl] = useState(''); // State for storing the file URL
     const [showUploadMessageModal, setShowUploadMessageModal] = useState(false);
-
+    const [excludedCourses, setExcludedCourses] = useState([]); // Declare state for excluded courses
+    const [showExcludedCoursesModal, setShowExcludedCoursesModal] = useState(false); // State for excluded courses modal
+    const [selectedCourseGrade, setSelectedCourseGrade] = useState(null);
+    const [showGradeModal, setShowGradeModal] = useState(false);
+    const [isDataUpdated, setIsDataUpdated] = useState(false); // Track if data was updated
+    const [modalMessage, setModalMessage] = useState('');
+    const [showModalMessage, setShowModalMessage] = useState(false);
 
     useEffect(() => {
         const unsubscribe = auth.onAuthStateChanged(user => {
@@ -74,16 +82,6 @@ const UploadGrades = () => {
             return;
         }
     
-        // Check if the user already has uploaded grades
-        const gradesDocRef = doc(db, 'grades', currentUser.uid);
-        const gradesDocSnapshot = await getDoc(gradesDocRef);
-        
-        // If the document exists, show the upload message modal
-        if (gradesDocSnapshot.exists()) {
-            setShowUploadMessageModal(true); // Show the modal if grades already exist
-            return; // Exit the function to prevent further actions
-        }
-    
         // Show the modal for uploading grades
         setShowModal(true);
     };
@@ -94,66 +92,68 @@ const UploadGrades = () => {
         setShowViewGradesModal(true);
     };
 
-    const fetchGrades = async () => {
-        if (!currentUser || !currentUser.uid) {
-            console.error('Current user is not defined');
-            return;
+   const fetchGrades = async () => {
+    if (!currentUser || !currentUser.uid) {
+        console.error('Current user is not defined');
+        return;
+    }
+
+    try {
+        // Reference to the user's grades document
+        const gradesDocRef = doc(db, 'grades', currentUser.uid);
+        const gradesDoc = await getDoc(gradesDocRef);
+
+        if (!gradesDoc.exists()) {
+            console.warn(`Grades document does not exist for user ID: ${currentUser.uid}`);
+            // Optionally create the document with default values
+            await setDoc(gradesDocRef, {}); // Create an empty document
+            console.log(`Empty grades document created for user ID: ${currentUser.uid}`);
+            return; // Exit the function if no grades document exists
         }
-    
-        try {
-            // Reference to the user's grades document
-            const gradesDocRef = doc(db, 'grades', currentUser.uid);
-            const gradesDoc = await getDoc(gradesDocRef);
-    
-            if (!gradesDoc.exists()) {
-                console.warn(`Grades document does not exist for user ID: ${currentUser.uid}`);
-                // Optionally create the document with default values
-                await setDoc(gradesDocRef, {}); // Create an empty document
-                console.log(`Empty grades document created for user ID: ${currentUser.uid}`);
-                return; // Exit the function if no grades document exists
-            }
-    
-            const yearLevelCollectionRef = collection(gradesDocRef, yearLevel); // Reference to the user's year level
-            
-            // Fetch data for the first and second semester
-            const firstSemesterDocRef = doc(yearLevelCollectionRef, 'firstSemester');
-            const secondSemesterDocRef = doc(yearLevelCollectionRef, 'secondSemester');
-    
-            const allGrades = [];
-    
-            // Handle first semester grades
-            const firstSemesterDoc = await getDoc(firstSemesterDocRef);
-            if (firstSemesterDoc.exists()) {
-                const firstSemesterData = firstSemesterDoc.data();
-                const firstSemesterGrades = firstSemesterData.grades || [];
-                allGrades.push(...firstSemesterGrades.map((grade, index) => ({
-                    id: `firstSemester-${index}`, // Unique ID for each grade
-                    ...grade,
-                })));
-            } else {
-                console.warn(`First semester grades document does not exist for user ID: ${currentUser.uid}`);
-            }
-    
-            // Handle second semester grades
-            const secondSemesterDoc = await getDoc(secondSemesterDocRef);
-            if (secondSemesterDoc.exists()) {
-                const secondSemesterData = secondSemesterDoc.data();
-                const secondSemesterGrades = secondSemesterData.grades || [];
-                allGrades.push(...secondSemesterGrades.map((grade, index) => ({
+
+        const yearLevelCollectionRef = collection(gradesDocRef, yearLevel); // Reference to the user's year level
+        
+        // Fetch second semester first since it's considered the latest
+        const secondSemesterDocRef = doc(yearLevelCollectionRef, 'secondSemester');
+        const secondSemesterDoc = await getDoc(secondSemesterDocRef);
+
+        if (secondSemesterDoc.exists()) {
+            const secondSemesterData = secondSemesterDoc.data();
+            const secondSemesterGrades = secondSemesterData.grades || [];
+            setGrades(
+                secondSemesterGrades.map((grade, index) => ({
                     id: `secondSemester-${index}`, // Unique ID for each grade
                     ...grade,
-                })));
-            } else {
-                console.warn(`Second semester grades document does not exist for user ID: ${currentUser.uid}`);
-            }
-    
-            // Store all grades in state
-            setGrades(allGrades); 
-            setFileUrl(firstSemesterDoc.data().fileUrl || ''); // Set the file URL from the first semester document
-        } catch (error) {
-            console.error('Error fetching grades:', error);
+                }))
+            );
+            setFileUrl(secondSemesterData.fileUrl || ''); // Set the file URL for the second semester
+            return; // Stop here since we have the latest grades
         }
-    };
+
+        // If no second semester grades exist, fall back to first semester
+        const firstSemesterDocRef = doc(yearLevelCollectionRef, 'firstSemester');
+        const firstSemesterDoc = await getDoc(firstSemesterDocRef);
+
+        if (firstSemesterDoc.exists()) {
+            const firstSemesterData = firstSemesterDoc.data();
+            const firstSemesterGrades = firstSemesterData.grades || [];
+            setGrades(
+                firstSemesterGrades.map((grade, index) => ({
+                    id: `firstSemester-${index}`, // Unique ID for each grade
+                    ...grade,
+                }))
+            );
+            setFileUrl(firstSemesterData.fileUrl || ''); // Set the file URL for the first semester
+        } else {
+            console.warn(`No grades available for user ID: ${currentUser.uid}`);
+            setGrades([]); // Clear grades if none are available
+            setFileUrl(''); // Clear file URL
+        }
+    } catch (error) {
+        console.error('Error fetching grades:', error);
+    }
+};
+
     
     
     const handleCloseModal = () => {
@@ -182,25 +182,41 @@ const UploadGrades = () => {
         try {
             const storage = getStorage(); // Initialize Firebase Storage
     
-            // Create a new document reference under the grades collection for the current user
+            // Reference to the grades document for the current user
             const gradesDocRef = doc(db, 'grades', currentUser.uid); // This is the document for the user's grades
+            const yearLevelCollectionRef = collection(gradesDocRef, yearLevel); // Reference to the user's year level
     
-            // Create a subcollection for the year level under the user's grades document
-            const yearLevelCollectionRef = collection(gradesDocRef, yearLevel); // yearLevel is a string, e.g., "1st year"
+            // Before uploading the new grades, delete the previous semester's grades and store them in a new collection
+            const currentSemester = selectedSemester === '1st' ? 'firstSemester' : 'secondSemester';
+            const previousSemester = selectedSemester === '1st' ? 'secondSemester' : 'firstSemester';
     
-            // For each semester, we should create a document rather than a subcollection
-            const semesterDocRef = doc(yearLevelCollectionRef, selectedSemester === '1st' ? 'firstSemester' : 'secondSemester'); 
+            // Fetch previous semester grades and store them in a new collection for archival purposes
+            const previousSemesterDocRef = doc(yearLevelCollectionRef, previousSemester);
+            const previousSemesterDoc = await getDoc(previousSemesterDocRef);
     
-            // Set up the semester document to hold the grades
+            if (previousSemesterDoc.exists()) {
+                const previousGrades = previousSemesterDoc.data().grades || [];
+                const archivedGradesRef = collection(db, 'archivedGrades', currentUser.uid, yearLevel);
+                const archivedSemesterDocRef = doc(archivedGradesRef, previousSemester);
+    
+                // Save the previous semester grades in the archived collection
+                await setDoc(archivedSemesterDocRef, { grades: previousGrades });
+            }
+    
+            // Delete the previous semester grades from the current collection
+            await deleteDoc(previousSemesterDocRef);
+    
+            // Proceed with saving the new grades (same as your existing logic)
+            const semesterDocRef = doc(yearLevelCollectionRef, currentSemester);
+    
             await setDoc(semesterDocRef, { fileUrl: '' }); // Initialize with an empty fileUrl
     
-            // Upload the file to Firebase Storage
             const storageRef = ref(storage, `uploads/${selectedFile.name}`);
             await uploadBytes(storageRef, selectedFile);
-            const fileUrl = await getDownloadURL(storageRef); // Get the file URL
+            const fileUrl = await getDownloadURL(storageRef);
     
             // Loop through subjects and save each grade in the semester document
-            const gradesData = []; // Array to hold all grades for the semester
+            const gradesData = [];
     
             for (const subject of subjects) {
                 const { courseTitle, courseCode, preRequisite, grade, status } = subject;
@@ -218,8 +234,8 @@ const UploadGrades = () => {
             // Update the semester document with the grades data and file URL
             await setDoc(semesterDocRef, {
                 grades: gradesData,
-                fileUrl, // Set the file URL
-            }, { merge: true }); // Use merge to update without overwriting
+                fileUrl,
+            }, { merge: true });
     
             // Show success modal on successful save
             setShowSuccessModal(true);
@@ -234,6 +250,219 @@ const UploadGrades = () => {
             setIsLoading(false); // Stop loading
         }
     };
+    
+    const handleViewCoursesToEnroll = async () => {
+        const failedCourses = grades
+            .filter(grade => grade.status === 'FAILED')
+            .map(grade => grade.courseCode.trim());
+    
+        try {
+            // Define document references for first and second semester grades
+            const firstSemesterDocRef = doc(collection(db, 'grades', currentUser.uid, yearLevel), 'firstSemester');
+            const secondSemesterDocRef = doc(collection(db, 'grades', currentUser.uid, yearLevel), 'secondSemester');
+    
+            // Get the documents for first and second semester
+            const firstSemesterDoc = await getDoc(firstSemesterDocRef);
+            const secondSemesterDoc = await getDoc(secondSemesterDocRef);
+    
+            let currentSemester;
+            let nextSemesterCollection;
+    
+            // Determine the current semester based on uploaded grades
+            if (firstSemesterDoc.exists()) {
+                currentSemester = 'firstSemester';
+            } else if (secondSemesterDoc.exists()) {
+                currentSemester = 'secondSemester';
+            } else {
+                console.warn("No grades found for the user.");
+                return;
+            }
+    
+            console.log(`Current Semester: ${currentSemester}`);
+            console.log(`Current Year Level: ${yearLevel}`);
+    
+            // Logic to determine the next semester
+            if (yearLevel === "1st year") {
+                if (currentSemester === 'firstSemester') {
+                    nextSemesterCollection = "subjects/1stYear/secondSemester";
+                } else if (currentSemester === 'secondSemester') {
+                    nextSemesterCollection = "subjects/2ndYear/firstSemester";
+                }
+            } else if (yearLevel === "2nd year") {
+                if (currentSemester === 'firstSemester') {
+                    nextSemesterCollection = "subjects/2ndYear/secondSemester";
+                } else if (currentSemester === 'secondSemester') {
+                    nextSemesterCollection = "subjects/3rdYear/firstSemester";
+                }
+            } else if (yearLevel === "3rd year") {
+                if (currentSemester === 'firstSemester') {
+                    nextSemesterCollection = "subjects/3rdYear/secondSemester";
+                } else if (currentSemester === 'secondSemester') {
+                    nextSemesterCollection = "subjects/4thYear/firstSemester";
+                }
+            } else if (yearLevel === "4th year") {
+                console.warn("You've completed all subjects.");
+                return;
+            } else {
+                console.warn("Unknown year level. No courses will be fetched.");
+                return;
+            }
+    
+            console.log(`Fetching courses from: ${nextSemesterCollection}`);
+    
+            // Fetch the courses from the next semester collection
+            const semesterRef = collection(db, nextSemesterCollection);
+            const querySnapshot = await getDocs(semesterRef);
+    
+            if (querySnapshot.empty) {
+                console.warn("No courses found in the collection.");
+                return;
+            }
+    
+            const eligibleCourses = [];
+            const excludedCourses = [];
+    
+            querySnapshot.forEach(doc => {
+                const course = doc.data();
+                const prerequisites = course.preRequisite ? course.preRequisite.trim().split(",") : [];  // Support for multiple prerequisites
+    
+                // Check for "2nd Year Standing", "3rd Year Standing", and "4th Year Standing" prerequisites
+                const hasSecondYearStandingPrerequisite = prerequisites.includes("2nd Year Standing");
+                const hasThirdYearStandingPrerequisite = prerequisites.includes("3rd Year Standing");
+                const hasFourthYearStandingPrerequisite = prerequisites.includes("4th Year Standing");
+    
+                // If any of these year standing prerequisites are present and the student has failed any course, exclude the course
+                if ((hasSecondYearStandingPrerequisite || hasThirdYearStandingPrerequisite || hasFourthYearStandingPrerequisite) && failedCourses.length > 0) {
+                    excludedCourses.push({
+                        courseCode: course.courseCode,
+                        courseTitle: course.courseTitle,
+                        preRequisite: prerequisites.join(", ")  // Show all prerequisites
+                    });
+                    console.log(`Excluding course ${course.courseCode} due to failed subject and prerequisite: ${prerequisites.join(", ")}`);
+                } else {
+                    // Check if the student has failed any of the prerequisites
+                    const failedPrerequisites = prerequisites.filter(prerequisite => failedCourses.includes(prerequisite.trim()));
+    
+                    if (failedPrerequisites.length > 0) {
+                        excludedCourses.push({
+                            courseCode: course.courseCode,
+                            courseTitle: course.courseTitle,
+                            preRequisite: prerequisites.join(", ")  // Show all prerequisites
+                        });
+                        console.log(`Excluding course ${course.courseCode} due to failed prerequisite(s): ${failedPrerequisites.join(", ")}`);
+                    } else {
+                        eligibleCourses.push({
+                            id: doc.id,
+                            courseCode: course.courseCode,
+                            courseTitle: course.courseTitle,
+                            preRequisite: prerequisites.join(", "),  // Show all prerequisites
+                            units: course.units || { lec: 0, lab: 0, total: 0 },
+                            hoursPerWeek: course.hoursPerWeek || { lec: 0, lab: 0, total: 0 },
+                            hoursPerSemester: course.hoursPerSemester || { lec: 0, lab: 0, total: 0 }
+                        });
+                    }
+                }
+            });
+    
+            // Fetch existing data for this student from the coursesToEnrollments collection
+            const coursesRef = doc(collection(db, 'coursesToEnrollments'), currentUser.uid);
+            const coursesDoc = await getDoc(coursesRef);
+    
+            if (coursesDoc.exists()) {
+                // Compare existing stored courses with new ones
+                const storedEligibleCourses = coursesDoc.data().eligibleCourses;
+                const storedExcludedCourses = coursesDoc.data().excludedCourses;
+    
+                // Normalize courses to remove any differences in order or structure
+                const normalizeCourses = (courses) => {
+                    return courses.map(course => ({
+                        courseCode: course.courseCode,
+                        courseTitle: course.courseTitle,
+                        preRequisite: course.preRequisite
+                    }));
+                };
+    
+                const normalizedEligibleCourses = normalizeCourses(eligibleCourses);
+                const normalizedExcludedCourses = normalizeCourses(excludedCourses);
+                const normalizedStoredEligibleCourses = normalizeCourses(storedEligibleCourses);
+                const normalizedStoredExcludedCourses = normalizeCourses(storedExcludedCourses);
+    
+                const isCoursesUnchanged = JSON.stringify(normalizedStoredEligibleCourses) === JSON.stringify(normalizedEligibleCourses) &&
+                                           JSON.stringify(normalizedStoredExcludedCourses) === JSON.stringify(normalizedExcludedCourses);
+    
+                console.log("Courses Unchanged:", isCoursesUnchanged);
+    
+                // Always update the state with the fetched courses, even if unchanged
+                setCoursesToEnroll(eligibleCourses);
+                setExcludedCourses(excludedCourses);
+    
+                if (isCoursesUnchanged) {
+                    console.log("Courses data is the same as before, enabling button.");
+                } else {
+                    // Show the pop-up message saying courses have already been updated
+                    setShowModalMessage(true); // Show modal with message
+                    
+                    // Prevent the modal from showing if alert is triggered
+                    setShowEnrollCoursesModal(false); // Ensure the modal does not show
+                    return; // Exit early if the alert is shown
+                }
+                // Show modal to view the courses
+                setShowEnrollCoursesModal(true);
+            } else {
+                // If no previous data exists, store the new courses
+                await setDoc(coursesRef, {
+                    eligibleCourses: eligibleCourses,
+                    excludedCourses: excludedCourses,
+                    timestamp: new Date()
+                }).then(() => {
+                    console.log("Courses to be enrolled successfully stored in Firestore.");
+                    setCoursesToEnroll(eligibleCourses);
+                    setExcludedCourses(excludedCourses);
+                    console.log("Setting showEnrollCoursesModal to true");
+                    setShowEnrollCoursesModal(true);
+                }).catch((error) => {
+                    console.error("Error storing courses in Firestore:", error);
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching courses to enroll:', error);
+        }
+    };
+    
+    
+    const storeExcludedCourses = async () => {
+        if (excludedCourses.length === 0) {
+            console.log("No excluded courses to store.");
+            return;
+        }
+    
+        try {
+            // Define the document reference in the `excludedCourses` collection
+            const excludedCoursesDocRef = doc(db, 'excludedCourses', currentUser.uid);
+    
+            // Check if the document already exists
+            const docSnapshot = await getDoc(excludedCoursesDocRef);
+            if (docSnapshot.exists()) {
+                console.log("Excluded courses already stored. Skipping save operation.");
+                return;
+            }
+    
+            // Prepare the data to store
+            const data = {
+                excludedCourses: excludedCourses,
+                timestamp: new Date(), // Optional: Add a timestamp for when the data was stored
+            };
+    
+            // Store the data in Firestore
+            await setDoc(excludedCoursesDocRef, data);
+            console.log("Excluded courses successfully stored in Firestore.");
+        } catch (error) {
+            console.error("Error storing excluded courses in Firestore:", error);
+        }
+    };
+    
+
+    
     
     
     const fetchSubjects = async (semester) => {
@@ -460,8 +689,12 @@ const UploadGrades = () => {
                 >
                     Save Grades
                 </button>
+
+             
+
             </div>
         </div>
+        
     </div>
 )}
 
@@ -548,14 +781,22 @@ const UploadGrades = () => {
                 </div>
             )}
 
-<div className="mt-6 flex justify-end">
-                <button
-                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm" 
-                    onClick={handleCloseModal}
-                >
-                    Close
-                </button>
-            </div>
+<div className="mt-6 flex justify-end space-x-4">
+    <button
+        className="bg-red-600 text-white px-6 py-3 w-30 rounded-lg hover:bg-red-700 transition-colors text-sm"
+        onClick={handleCloseModal}
+    >
+        Close
+    </button>
+    <button
+        className="bg-blue-600 text-white px-6 py-3 w-30 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+        onClick={handleViewCoursesToEnroll}
+    >
+        View Courses to Be Enrolled
+    </button>
+</div>
+
+            
         </div>
     </div>
 )}
@@ -582,6 +823,175 @@ const UploadGrades = () => {
         </div>
     </div>
 )}
+
+
+
+{/* Enrollment Courses Modal */}
+{showEnrollCoursesModal && (
+    <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center">
+        <div className="bg-white p-8 rounded-lg shadow-lg max-w-6xl w-full">
+            <h3 className="text-2xl font-semibold mb-6 text-center">Courses Eligible for Enrollment</h3>
+           
+{/* Message for excluded courses */}
+{excludedCourses.length > 0 && (
+    <div className="mb-4 text-red-600 text-center flex items-center justify-center">
+        <HiExclamation className="mr-2 text-2xl" /> {/* Icon with increased size */}
+        <p>You have failed or excluded subjects. Please review your excluded courses.</p>
+    </div>
+)}
+
+            <table className="w-full border-collapse text-base">
+                <thead>
+                    <tr className="bg-orange-300">
+                        <th className="border p-4">Course Code</th>
+                        <th className="border p-4">Course Title</th>
+                        <th className="border p-4" colSpan={3}>
+                            Units<br />
+                            <span className="flex justify-around">
+                                <span>Lec</span>
+                                <span>Lab</span>
+                                <span>Total</span>
+                            </span>
+                        </th>
+                        <th className="border p-4" colSpan={3}>
+                            Hours/Week<br />
+                            <span className="flex justify-around">
+                                <span>Lec</span>
+                                <span>Lab</span>
+                                <span>Total</span>
+                            </span>
+                        </th>
+                        <th className="border p-4" colSpan={3}>
+                            Hours/Semester<br />
+                            <span className="flex justify-around">
+                                <span>Lec</span>
+                                <span>Lab</span>
+                                <span>Total</span>
+                            </span>
+                        </th>
+                        <th className="border p-4">Pre-Requisite</th>
+                        <th className="border p-4">Co-Requisite</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {coursesToEnroll.length > 0 ? (
+                        coursesToEnroll.map((course, index) => (
+                            <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-200'}>
+                                <td className="border p-4">{course.courseCode}</td>
+                                <td className="border p-4">{course.courseTitle}</td>
+                                <td className="border p-4">{course.units.lec}</td>
+                                <td className="border p-4">{course.units.lab}</td>
+                                <td className="border p-4">{course.units.total}</td>
+                                <td className="border p-4">{course.hoursPerWeek.lec}</td>
+                                <td className="border p-4">{course.hoursPerWeek.lab}</td>
+                                <td className="border p-4">{course.hoursPerWeek.total}</td>
+                                <td className="border p-4">{course.hoursPerSemester.lec}</td>
+                                <td className="border p-4">{course.hoursPerSemester.lab}</td>
+                                <td className="border p-4">{course.hoursPerSemester.total}</td>
+                                <td className="border p-4">{course.preRequisite}</td>
+                                <td className="border p-4">{course.coRequisite}</td>
+                            </tr>
+                        ))
+                    ) : (
+                        <tr>
+                            <td colSpan={13} className="text-center text-gray-500 py-6">No courses available for enrollment based on current grades.</td>
+                        </tr>
+                    )}
+                </tbody>
+            </table>
+            {/* Button container with flex layout for alignment */}
+            <div className="flex justify-end mt-6 space-x-4">
+                <button
+                    className="bg-orange-600 text-white px-6 py-3 rounded-lg hover:bg-orange-700 transition-colors"
+                    onClick={() => setShowEnrollCoursesModal(false)}
+                >
+                    Close
+                </button>
+                <button
+    className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors"
+    onClick={() => {
+        setShowExcludedCoursesModal(true);
+        storeExcludedCourses(); // Store the excluded courses in Firestore
+    }}
+>
+    View Excluded Courses
+</button>
+
+            </div>
+        </div>
+    </div>
+)}
+
+
+  {/* Modal for message */}
+{showModalMessage && (
+    <div className="fixed inset-0 flex items-center justify-center z-50 bg-gray-800 bg-opacity-50">
+        <div className="bg-white p-8 rounded-lg shadow-xl w-96 max-w-sm flex flex-col items-center">
+            <HiExclamation className="text-yellow-500 text-6xl mb-4" /> {/* Exclamation icon in yellow */}
+            <h3 className="text-2xl font-semibold text-gray-900">Courses Updated</h3>
+            <p className="mt-2 text-gray-600 text-center">The evaluator has already updated your courses to enroll. Please check your curriculum list.</p>
+            <div className="mt-6 flex justify-center w-full">
+                <button
+                    onClick={() => setShowModalMessage(false)}
+                    className="bg-blue-600 text-white py-2 px-6 rounded-full hover:bg-blue-700 transition duration-200">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+)}
+{/* Excluded Courses Modal */}
+{showExcludedCoursesModal && (
+    <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center">
+        <div className="bg-white p-8 rounded-lg shadow-lg max-w-6xl w-full relative">
+            <h3 className="text-2xl font-semibold mb-2 text-center">Excluded Courses Due to Failed Prerequisites</h3>
+
+          {/* Notification Message with Icon */}
+          <div className="flex items-center justify-center text-red-600 mb-6">
+                <HiExclamation className="mr-2 h-6 w-6" />
+                <p>Please check your uploaded grades. If you think there’s a mistake, you can reach out to message the evaluator.</p>
+            </div>
+            
+            
+            {/* Courses Table */}
+            <table className="w-full border-collapse text-base">
+                <thead>
+                    <tr className="bg-red-300">
+                        <th className="border p-4">Course Code</th>
+                        <th className="border p-4">Course Title</th>
+                        <th className="border p-4">Pre-Requisite</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {excludedCourses.length > 0 ? (
+                        excludedCourses.map((course, index) => (
+                            <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-200'}>
+                                <td className="border p-4">{course.courseCode}</td>
+                                <td className="border p-4">{course.courseTitle}</td>
+                                <td className="border p-4">{course.preRequisite}</td>
+                            </tr>
+                        ))
+                    ) : (
+                        <tr>
+                            <td colSpan={3} className="text-center text-gray-500 py-6">No excluded courses found.</td>
+                        </tr>
+                    )}
+                </tbody>
+            </table>
+
+            {/* Close Button in Bottom Right */}
+            <div className="flex justify-end mt-6">
+                <button
+                    className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors"
+                    onClick={() => setShowExcludedCoursesModal(false)}
+                >
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+)}
+
 
         </div>
     );

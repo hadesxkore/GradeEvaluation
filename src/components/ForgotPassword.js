@@ -39,40 +39,49 @@ const ForgotPassword = () => {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="max-w-md w-full p-5 border rounded-lg shadow-lg bg-white">
-        <div className="flex flex-col items-center mb-5">
-          <HiLockClosed className="text-4xl mb-2" /> {/* Increased icon size */}
-          <h1 className="text-3xl font-bold text-gray-800">Forgot Password</h1>
-        </div>
-        {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
-        <form onSubmit={handlePasswordReset}>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1 text-gray-700">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg border-gray-300 focus:border-black focus:ring-black"
-              required
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full bg-black text-white py-2 px-4 rounded-lg hover:bg-gray-800 transition-colors"
-          >
-            Reset Password
-          </button>
-        </form>
-        <p className="mt-4 text-center text-gray-600">
-          Remember your password?{' '}
-          <button
-            onClick={() => navigate('/login')} // Navigate back to the login page
-            className="text-blue-600 hover:underline font-semibold"
-          >
-            Login
-          </button>
-        </p>
-      </div>
+     <div className="max-w-md w-full p-5 border rounded-3xl shadow-lg bg-white">
+  <div className="flex flex-col items-center mb-5">
+    <HiLockClosed className="text-4xl mb-2" /> {/* Increased icon size */}
+    <h1 className="text-3xl font-bold text-gray-800">Forgot Password</h1>
+  </div>
+  
+  {/* Added informational sentence */}
+  <p className="text-gray-600 text-sm mb-4 text-center">
+    Enter your email address below and we'll send you a link to reset your password.
+  </p>
+
+  {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
+  
+  <form onSubmit={handlePasswordReset}>
+    <div className="mb-4">
+      <label className="block text-sm font-medium mb-1 text-gray-700">Email</label>
+      <input
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        className="w-full px-3 py-2 border rounded-lg border-gray-300 focus:border-black focus:ring-black"
+        required
+      />
+    </div>
+    <button
+      type="submit"
+      className="w-full bg-black text-white py-2 px-4 rounded-lg hover:bg-gray-800 transition-colors"
+    >
+      Reset Password
+    </button>
+  </form>
+
+  <p className="mt-4 text-center text-gray-600">
+    Remember your password?{' '}
+    <button
+      onClick={() => navigate('/login')} // Navigate back to the login page
+      className="text-blue-600 hover:underline font-semibold"
+    >
+      Login
+    </button>
+  </p>
+</div>
+
 
      {/* Modal for successful password reset */}
 <Modal

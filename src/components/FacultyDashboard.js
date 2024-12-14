@@ -79,36 +79,14 @@ const FacultyDashboard = () => {
       </div>
       <nav className="mt-5 flex-grow">
         <ul className="space-y-2">
-          <li>
-            <button
-              onClick={toggleEvaluationDropdown}
-              className="flex items-center w-full px-5 py-4 text-lg text-gray-800 bg-white rounded-lg hover:bg-teal-500 hover:text-white transition-colors duration-200"
-            >
-              <HiOutlineDocumentText className="mr-3 text-2xl" />
-              Evaluation
-              <HiChevronDown className={`ml-auto transform ${isEvaluationDropdownOpen ? 'rotate-180' : 'rotate-0'}`} />
-            </button>
-            {isEvaluationDropdownOpen && (
-              <ul className="mt-2 space-y-2 ml-6">
-                <li>
-                  <Link
-                    to="/faculty-dashboard/encode-grades"
-                    className="flex items-center px-4 py-3 text-lg text-gray-800 bg-gray-50 rounded-lg hover:bg-teal-500 hover:text-white transition-colors duration-200"
-                  >
-                    <HiOutlineDocumentText className="mr-3 text-xl" />
-                    Encode Grades
-                  </Link>
-                </li>
-              </ul>
-            )}
-          </li>
+         
           <li>
             <Link
               to="/faculty-dashboard/upload-student-masterlist"
               className="flex items-center px-5 py-4 text-lg text-gray-800 bg-white rounded-lg hover:bg-teal-500 hover:text-white transition-colors duration-200"
             >
               <HiOutlineUser className="mr-3 text-2xl" />
-              Upload Student Masterlist
+              Analyze Residency
             </Link>
           </li>
           <li>
@@ -122,15 +100,7 @@ const FacultyDashboard = () => {
             </button>
             {isManageCoursesDropdownOpen && (
               <ul className="mt-2 space-y-2 ml-6">
-                <li>
-                  <Link
-                    to="/faculty-dashboard/create-subjects"
-                    className="flex items-center px-4 py-3 text-lg text-gray-800 bg-gray-50 rounded-lg hover:bg-teal-500 hover:text-white transition-colors duration-200"
-                  >
-                    <HiOutlineDocumentAdd className="mr-3 text-xl" />
-                    Create Subjects
-                  </Link>
-                </li>
+                
                 <li>
                   <Link
                     to="/faculty-dashboard/create-section"

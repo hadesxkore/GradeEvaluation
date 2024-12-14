@@ -89,24 +89,7 @@ const AdminDashboard = () => {
               Create Evaluator
             </Link>
           </li>
-          <li>
-            <Link
-              to="/admin-dashboard/content-customization"
-              className="flex items-center px-4 py-3 text-gray-300 hover:bg-red-600 hover:text-white transition-colors duration-200"
-            >
-              <HiOutlineAdjustments className="mr-3 text-lg" />
-              Content Customization
-            </Link>
-          </li>
-          <li>
-            <Link
-              to="/admin-dashboard/reports"
-              className="flex items-center px-4 py-3 text-gray-300 hover:bg-red-600 hover:text-white transition-colors duration-200"
-            >
-              <HiOutlineClipboardList className="mr-3 text-lg" />
-              Reports
-            </Link>
-          </li>
+          
           <li>
             <Link
               to="/admin-dashboard/admin-add-subject"
@@ -118,13 +101,15 @@ const AdminDashboard = () => {
           </li>
           <li>
             <Link
-              to="/admin-dashboard/system-settings"
+              to="/admin-dashboard/reports"
               className="flex items-center px-4 py-3 text-gray-300 hover:bg-red-600 hover:text-white transition-colors duration-200"
             >
-              <HiOutlineCog className="mr-3 text-lg" />
-              System Settings
+              <HiOutlineClipboardList className="mr-3 text-lg" />
+              Reports
             </Link>
           </li>
+       
+         
         </ul>
       </nav>
       <div className="p-4 border-t border-gray-700">

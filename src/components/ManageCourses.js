@@ -192,12 +192,7 @@ const ManageCourses = () => {
         }
     };
     
-    const handleViewCourses = () => {
-      setIsSemesterModalOpen(true);
-    };
-
-
-
+  
 useEffect(() => {
   const fetchUserYearLevel = async () => {
       const userId = auth.currentUser?.uid;
@@ -210,46 +205,76 @@ useEffect(() => {
 }, []);
 
 
+const fetchCourses = async () => {
+  const auth = getAuth();
+  const user = auth.currentUser;
 
+  if (user) {
+    const userId = user.uid;
+    console.log('Current User ID:', userId);  // Log current user ID
 
+    // Correctly querying the coursesToEnrollments collection (not from the users collection)
+    const coursesRef = collection(db, 'coursesToEnrollments');
+    
+    try {
+      console.log('Querying collection:', coursesRef.path);  // Log the path being queried
+      const querySnapshot = await getDocs(coursesRef);
+      console.log('Fetched documents:', querySnapshot.docs); // Log the raw documents fetched
 
+      if (querySnapshot.empty) {
+        console.warn('No courses found in the coursesToEnrollments collection.');
+        setCourses([]); // Clear courses if none found
+      } else {
+        querySnapshot.docs.forEach(doc => {
+          console.log('Document data:', doc.data());  // Log individual document data
+        });
 
-const fetchCourses = async (selectedSemester) => {
-  if (userYearLevel && selectedSemester) {
-      // Format the document ID based on year level (e.g., '1stYear')
-      const formattedYearLevel = userYearLevel.replace(/\s+/g, '').replace(/year/i, '') + 'Year'; // Removes spaces and 'year'
-      console.log("Year Document ID:", formattedYearLevel); // Debugging line
+        // Extract course data
+        const coursesData = querySnapshot.docs.flatMap(doc => {
+          const data = doc.data();
+          console.log('Course Data:', data);  // Log course data
 
-      // Determine the appropriate subcollection based on the selected semester
-      const semesterRef = collection(db, 'subjects', formattedYearLevel, selectedSemester);
-      console.log("Fetching from path:", semesterRef.path); // Debugging line
-
-      try {
-          // Fetch courses from the Firestore collection
-          const querySnapshot = await getDocs(semesterRef);
-          if (querySnapshot.empty) {
-              console.warn('No courses found for the selected semester.');
-              setCourses([]); // Clear courses if none found
-          } else {
-              const coursesData = querySnapshot.docs.map(doc => doc.data());
-              console.log("Fetched Courses:", coursesData); // Debugging line
-              setCourses(coursesData);
-              setIsCoursesModalOpen(true); // Open modal to display courses
+          if (data.eligibleCourses && Array.isArray(data.eligibleCourses)) {
+            return data.eligibleCourses.map(course => ({
+              courseCode: course.courseCode,
+              courseTitle: course.courseTitle,
+              preRequisite: course.preRequisite,
+              hoursPerSemester: course.hoursPerSemester,
+              hoursPerWeek: course.hoursPerWeek,
+              units: course.units,
+            }));
           }
-      } catch (error) {
-          console.error('Error fetching courses:', error); // Handle errors
+          return [];
+        });
+
+        if (coursesData.length === 0) {
+          console.warn('No eligible courses found.');
+        } else {
+          console.log('Fetched Courses:', coursesData); // Log the final courses
+          setCourses(coursesData);
+          setIsCoursesModalOpen(true); // Open modal if courses are available
+        }
       }
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+    }
   } else {
-      console.error('User Year Level or Selected Semester is undefined');
+    console.error('No user is logged in');
   }
 };
 
 
-const handleSemesterSelect = (selectedSemester) => {
-  setSemester(selectedSemester);
-  setIsSemesterModalOpen(false);
-  fetchCourses(selectedSemester);
+const handleViewCourses = () => {
+  fetchCourses(); // Fetch courses when the button is clicked
 };
+
+
+  // Close the modal
+  const closeModal = () => {
+    setIsCoursesModalOpen(false);
+  };
+
+
 
 const closeCoursesModal = () => {
   setIsCoursesModalOpen(false);
@@ -291,9 +316,8 @@ const closeCoursesModal = () => {
   </div>
 
   
-
- {/* View My Courses */}
-<div className="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-lg border border-green-200 shadow-sm hover:shadow-lg transition-shadow relative">
+{/* View My Courses */}
+<div className="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-lg border border-green-200 shadow-sm hover:shadow-lg transition-shadow relative max-w-lg">
   {/* Notification Icon */}
   {notifications.length > 0 && (
     <div
@@ -308,20 +332,20 @@ const closeCoursesModal = () => {
       </span>
     </div>
   )}
-    {/* View My Courses */}
-    <h3 className="text-xl font-semibold flex items-center">
-      <HiEye className="mr-2 text-green-500" /> View My Courses
-    </h3>
-    <p className="mt-2 text-gray-600">
-      Review the courses you've uploaded and manage them as needed.
-    </p>
-    <button
-      className="mt-4 bg-gradient-to-r from-green-600 to-green-700 text-white px-4 py-2 rounded hover:bg-green-800 transition-colors"
-      onClick={() => setIsViewModalOpen(true)} // Open the view modal
-    >
-      View Courses
-    </button>
-  </div>
+  {/* View My Courses */}
+  <h3 className="text-xl font-semibold flex items-center">
+    <HiEye className="mr-2 text-green-500" /> View My Courses
+  </h3>
+  <p className="mt-2 text-gray-600">
+    Review the courses you've uploaded and manage them as needed to ensure they are up-to-date
+  </p>
+  <button
+    className="mt-4 bg-gradient-to-r from-green-600 to-green-700 text-white px-4 py-2 rounded hover:bg-green-800 transition-colors"
+    onClick={() => setIsViewModalOpen(true)} // Open the view modal
+  >
+    View Courses
+  </button>
+</div>
 
 
   {/* View My Courses to be Enrolled */}
@@ -343,100 +367,79 @@ const closeCoursesModal = () => {
 
 </div>
 
-
-{/* Semester Selection Modal */}
-{isSemesterModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-                    <div className="bg-white p-4 rounded-lg shadow-lg w-80">
-                        <h3 className="text-lg font-semibold mb-2">Select Semester</h3>
-                        <button
-                            className="block w-full bg-orange-500 text-white py-2 rounded mb-2 hover:bg-orange-600"
-                            onClick={() => handleSemesterSelect('firstSemester')}
-                        >
-                            First Semester
-                        </button>
-                        <button
-                            className="block w-full bg-orange-500 text-white py-2 rounded hover:bg-orange-600"
-                            onClick={() => handleSemesterSelect('secondSemester')}
-                        >
-                            Second Semester
-                        </button>
-                        <button
-                            className="block w-full text-gray-500 py-2 rounded mt-4 hover:bg-gray-100"
-                            onClick={() => setIsSemesterModalOpen(false)}
-                        >
-                            Cancel
-                        </button>
-                    </div>
-                </div>
-            )}
 {/* Courses Modal */}
 {isCoursesModalOpen && (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-        <div className="bg-white p-6 rounded-lg shadow-lg max-w-4xl w-full">
-            <h3 className="text-lg font-semibold mb-4 text-center">Courses - {semester === 'firstSemester' ? 'First Semester' : 'Second Semester'}</h3>
-            <table className="w-full border-collapse text-sm">
+        <div className="bg-white p-8 rounded-lg shadow-lg max-w-5xl w-full space-y-4 overflow-x-auto">
+            <h2 className="text-2xl font-semibold text-center text-gray-800 mb-6">Course to be Enrolled</h2>
+            <table className="w-full border-collapse text-sm table-auto">
                 <thead>
-                    <tr className="bg-orange-200">
-                        <th className="border p-2">Course Code</th>
-                        <th className="border p-2">Course Title</th>
-                        <th className="border p-2" colSpan={3}>
-                            Units<br />
-                            <span className="flex justify-around">
+                    <tr className="bg-orange-200 text-gray-800 font-semibold">
+                        <th className="border p-3">Course Code</th>
+                        <th className="border p-3">Course Title</th>
+                        <th className="border p-3" colSpan={3}>
+                            Units
+                            <span className="flex justify-around text-xs">
                                 <span>Lec</span>
                                 <span>Lab</span>
                                 <span>Total</span>
                             </span>
                         </th>
-                        <th className="border p-2" colSpan={3}>
-                            Hours/Week<br />
-                            <span className="flex justify-around">
+                        <th className="border p-3" colSpan={3}>
+                            Hours/Week
+                            <span className="flex justify-around text-xs">
                                 <span>Lec</span>
                                 <span>Lab</span>
                                 <span>Total</span>
                             </span>
                         </th>
-                        <th className="border p-2" colSpan={3}>
-                            Hours/Semester<br />
-                            <span className="flex justify-around">
+                        <th className="border p-3" colSpan={3}>
+                            Hours/Semester
+                            <span className="flex justify-around text-xs">
                                 <span>Lec</span>
                                 <span>Lab</span>
                                 <span>Total</span>
                             </span>
                         </th>
-                        <th className="border p-2">Pre-Requisite</th>
-                        <th className="border p-2">Co-Requisite</th>
+                        <th className="border p-3">Pre-Requisite</th>
+                        <th className="border p-3">Co-Requisite</th>
                     </tr>
                 </thead>
                 <tbody>
                     {courses.map((course, index) => (
-                        <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
-                            <td className="border p-2">{course.courseCode}</td>
-                            <td className="border p-2">{course.courseTitle}</td>
-                            <td className="border p-2">{course.units.lec}</td>
-                            <td className="border p-2">{course.units.lab}</td>
-                            <td className="border p-2">{course.units.total}</td>
-                            <td className="border p-2">{course.hoursPerWeek.lec}</td>
-                            <td className="border p-2">{course.hoursPerWeek.lab}</td>
-                            <td className="border p-2">{course.hoursPerWeek.total}</td>
-                            <td className="border p-2">{course.hoursPerSemester.lec}</td>
-                            <td className="border p-2">{course.hoursPerSemester.lab}</td>
-                            <td className="border p-2">{course.hoursPerSemester.total}</td>
-                            <td className="border p-2">{course.preRequisite}</td>
-                            <td className="border p-2">{course.coRequisite}</td>
+                        <tr
+                            key={index}
+                            className={`transition-all hover:bg-gray-200 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
+                        >
+                            <td className="border p-3">{course.courseCode}</td>
+                            <td className="border p-3">{course.courseTitle}</td>
+                            <td className="border p-3">{course.units.lec}</td>
+                            <td className="border p-3">{course.units.lab}</td>
+                            <td className="border p-3">{course.units.total}</td>
+                            <td className="border p-3">{course.hoursPerWeek.lec}</td>
+                            <td className="border p-3">{course.hoursPerWeek.lab}</td>
+                            <td className="border p-3">{course.hoursPerWeek.total}</td>
+                            <td className="border p-3">{course.hoursPerSemester.lec}</td>
+                            <td className="border p-3">{course.hoursPerSemester.lab}</td>
+                            <td className="border p-3">{course.hoursPerSemester.total}</td>
+                            <td className="border p-3">{course.preRequisite}</td>
+                            <td className="border p-3">{course.coRequisite}</td>
                         </tr>
                     ))}
                 </tbody>
             </table>
-            <button
-                className="mt-4 bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 transition-colors"
-                onClick={closeCoursesModal}
-            >
-                Close
-            </button>
+            <div className="flex justify-center mt-6">
+                <button
+                    className="bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600 transition-colors"
+                    onClick={closeCoursesModal}
+                >
+                    Close
+                </button>
+            </div>
         </div>
     </div>
 )}
+
 
 
 {/* Notification Modal */}

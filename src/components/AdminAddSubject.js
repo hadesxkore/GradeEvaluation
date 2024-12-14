@@ -110,17 +110,30 @@ const AdminAddDashboard = () => {
   };
   const handleShowSubjects = (level, sem) => {
     const key = `${level}-${sem}`;
-    setShowSubjects(prev => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
-
+    
+    // Update showSubjects state
+    setShowSubjects(prev => {
+      const newShowSubjects = {};
+  
+      // Toggle the selected table visibility
+      newShowSubjects[key] = !prev[key];
+  
+      // Ensure other tables are hidden
+      Object.keys(prev).forEach(existingKey => {
+        if (existingKey !== key) {
+          newShowSubjects[existingKey] = false;
+        }
+      });
+  
+      return newShowSubjects;
+    });
+  
     // Fetch subjects only if not already fetched
     if (!showSubjects[key]) {
       fetchSubjects(level, sem);
     }
   };
-
+  
 
 // Function to print the subjects table
 const handlePrint = async () => {
@@ -332,133 +345,136 @@ const handlePrint = async () => {
 
 
 
-        {["1st", "2nd", "3rd", "4th"].map((level) => (
-            
-          <div key={level}>
-            {showSubjects[`${level}-1st`] && (
-              <div className="mt-4 p-3 bg-white border border-gray-300 rounded">
-                <h4 className="font-semibold">Subjects for {level} Year - 1st Semester</h4>
-                <div id="subjectsTable"> {/* Set an ID for the table */}
-                  <table className="w-full mt-2">
-                    <thead>
-                      <tr>
-                        <th className="border px-4 py-2">Course Code</th>
-                        <th className="border px-4 py-2">Course Title</th>
-                        <th className="border px-4 py-2 text-center" colSpan={3}>
-                          Units<br />
-                          <span className="flex justify-around">
-                            <span>Lec</span>
-                            <span>Lab</span>
-                            <span>Total</span>
-                          </span>
-                        </th>
-                        <th className="border px-4 py-2 text-center" colSpan={3}>
-                          Hours/Week<br />
-                          <span className="flex justify-around">
-                            <span>Lec</span>
-                            <span>Lab</span>
-                            <span>Total</span>
-                          </span>
-                        </th>
-                        <th className="border px-4 py-2 text-center" colSpan={3}>
-                          Hours/Semester<br />
-                          <span className="flex justify-around">
-                            <span>Lec</span>
-                            <span>Lab</span>
-                            <span>Total</span>
-                          </span>
-                        </th>
-                        <th className="border px-4 py-2">Pre-Requisite</th>
-                        <th className="border px-4 py-2">Co-Requisite</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {subjects[level]["1st"].map((subject) => (
-                        <tr key={subject.id}>
-                          <td className="border px-4 py-2">{subject.courseCode}</td>
-                          <td className="border px-4 py-2">{subject.courseTitle}</td>
-                          <td className="border px-4 py-2">{subject.units.lec}</td>
-                          <td className="border px-4 py-2">{subject.units.lab}</td>
-                          <td className="border px-4 py-2">{subject.units.total}</td>
-                          <td className="border px-4 py-2">{subject.hoursPerWeek.lec}</td>
-                          <td className="border px-4 py-2">{subject.hoursPerWeek.lab}</td>
-                          <td className="border px-4 py-2">{subject.hoursPerWeek.total}</td>
-                          <td className="border px-4 py-2">{subject.hoursPerSemester.lec}</td>
-                          <td className="border px-4 py-2">{subject.hoursPerSemester.lab}</td>
-                          <td className="border px-4 py-2">{subject.hoursPerSemester.total}</td>
-                          <td className="border px-4 py-2">{subject.preRequisite}</td>
-                          <td className="border px-4 py-2">{subject.coRequisite}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
+{["1st", "2nd", "3rd", "4th"].map((level) => (
+  <div key={level}>
+    {showSubjects[`${level}-1st`] && (
+      <div className="mt-4 p-3 bg-white border border-gray-300 rounded">
+        <h4 className="font-semibold">Subjects for {level} Year - 1st Semester</h4>
+        <div id="subjectsTable" className="min-h-80"> {/* Set an ID and min height */}
+          <div className="overflow-y-auto" style={{ maxHeight: '300px' }}> {/* Scrollable if more than 5 rows */}
+            <table className="w-full mt-2">
+              <thead>
+                <tr>
+                  <th className="border px-4 py-2">Course Code</th>
+                  <th className="border px-4 py-2">Course Title</th>
+                  <th className="border px-4 py-2 text-center" colSpan={3}>
+                    Units<br />
+                    <span className="flex justify-around">
+                      <span>Lec</span>
+                      <span>Lab</span>
+                      <span>Total</span>
+                    </span>
+                  </th>
+                  <th className="border px-4 py-2 text-center" colSpan={3}>
+                    Hours/Week<br />
+                    <span className="flex justify-around">
+                      <span>Lec</span>
+                      <span>Lab</span>
+                      <span>Total</span>
+                    </span>
+                  </th>
+                  <th className="border px-4 py-2 text-center" colSpan={3}>
+                    Hours/Semester<br />
+                    <span className="flex justify-around">
+                      <span>Lec</span>
+                      <span>Lab</span>
+                      <span>Total</span>
+                    </span>
+                  </th>
+                  <th className="border px-4 py-2">Pre-Requisite</th>
+                  <th className="border px-4 py-2">Co-Requisite</th>
+                </tr>
+              </thead>
+              <tbody>
+                {subjects[level]["1st"].map((subject) => (
+                  <tr key={subject.id}>
+                    <td className="border px-4 py-2">{subject.courseCode}</td>
+                    <td className="border px-4 py-2">{subject.courseTitle}</td>
+                    <td className="border px-4 py-2">{subject.units.lec}</td>
+                    <td className="border px-4 py-2">{subject.units.lab}</td>
+                    <td className="border px-4 py-2">{subject.units.total}</td>
+                    <td className="border px-4 py-2">{subject.hoursPerWeek.lec}</td>
+                    <td className="border px-4 py-2">{subject.hoursPerWeek.lab}</td>
+                    <td className="border px-4 py-2">{subject.hoursPerWeek.total}</td>
+                    <td className="border px-4 py-2">{subject.hoursPerSemester.lec}</td>
+                    <td className="border px-4 py-2">{subject.hoursPerSemester.lab}</td>
+                    <td className="border px-4 py-2">{subject.hoursPerSemester.total}</td>
+                    <td className="border px-4 py-2">{subject.preRequisite}</td>
+                    <td className="border px-4 py-2">{subject.coRequisite}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    )}
 
-            {showSubjects[`${level}-2nd`] && (
-              <div className="mt-4 p-3 bg-white border border-gray-300 rounded">
-                <h4 className="font-semibold">Subjects for {level} Year - 2nd Semester</h4>
-                <div id="subjectsTable"> {/* Set an ID for the table */}
-                  <table className="w-full mt-2">
-                    <thead>
-                      <tr>
-                        <th className="border px-4 py-2">Course Code</th>
-                        <th className="border px-4 py-2">Course Title</th>
-                        <th className="border px-4 py-2 text-center" colSpan={3}>
-                          Units<br />
-                          <span className="flex justify-around">
-                            <span>Lec</span>
-                            <span>Lab</span>
-                            <span>Total</span>
-                          </span>
-                        </th>
-                        <th className="border px-4 py-2 text-center" colSpan={3}>
-                          Hours/Week<br />
-                          <span className="flex justify-around">
-                            <span>Lec</span>
-                            <span>Lab</span>
-                            <span>Total</span>
-                          </span>
-                        </th>
-                        <th className="border px-4 py-2 text-center" colSpan={3}>
-                          Hours/Semester<br />
-                          <span className="flex justify-around">
-                            <span>Lec</span>
-                            <span>Lab</span>
-                            <span>Total</span>
-                          </span>
-                        </th>
-                        <th className="border px-4 py-2">Pre-Requisite</th>
-                        <th className="border px-4 py-2">Co-Requisite</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {subjects[level]["2nd"].map((subject) => (
-                        <tr key={subject.id}>
-                          <td className="border px-4 py-2">{subject.courseCode}</td>
-                          <td className="border px-4 py-2">{subject.courseTitle}</td>
-                          <td className="border px-4 py-2">{subject.units.lec}</td>
-                          <td className="border px-4 py-2">{subject.units.lab}</td>
-                          <td className="border px-4 py-2">{subject.units.total}</td>
-                          <td className="border px-4 py-2">{subject.hoursPerWeek.lec}</td>
-                          <td className="border px-4 py-2">{subject.hoursPerWeek.lab}</td>
-                          <td className="border px-4 py-2">{subject.hoursPerWeek.total}</td>
-                          <td className="border px-4 py-2">{subject.hoursPerSemester.lec}</td>
-                          <td className="border px-4 py-2">{subject.hoursPerSemester.lab}</td>
-                          <td className="border px-4 py-2">{subject.hoursPerSemester.total}</td>
-                          <td className="border px-4 py-2">{subject.preRequisite}</td>
-                          <td className="border px-4 py-2">{subject.coRequisite}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    
-                  </table>
-                </div>
-              </div>
-            )}  
-            </div>
-        ))}
+    {showSubjects[`${level}-2nd`] && (
+      <div className="mt-4 p-3 bg-white border border-gray-300 rounded">
+        <h4 className="font-semibold">Subjects for {level} Year - 2nd Semester</h4>
+        <div id="subjectsTable" className="min-h-80">
+          <div className="overflow-y-auto" style={{ maxHeight: '300px' }}>
+            <table className="w-full mt-2">
+              <thead>
+                <tr>
+                  <th className="border px-4 py-2">Course Code</th>
+                  <th className="border px-4 py-2">Course Title</th>
+                  <th className="border px-4 py-2 text-center" colSpan={3}>
+                    Units<br />
+                    <span className="flex justify-around">
+                      <span>Lec</span>
+                      <span>Lab</span>
+                      <span>Total</span>
+                    </span>
+                  </th>
+                  <th className="border px-4 py-2 text-center" colSpan={3}>
+                    Hours/Week<br />
+                    <span className="flex justify-around">
+                      <span>Lec</span>
+                      <span>Lab</span>
+                      <span>Total</span>
+                    </span>
+                  </th>
+                  <th className="border px-4 py-2 text-center" colSpan={3}>
+                    Hours/Semester<br />
+                    <span className="flex justify-around">
+                      <span>Lec</span>
+                      <span>Lab</span>
+                      <span>Total</span>
+                    </span>
+                  </th>
+                  <th className="border px-4 py-2">Pre-Requisite</th>
+                  <th className="border px-4 py-2">Co-Requisite</th>
+                </tr>
+              </thead>
+              <tbody>
+                {subjects[level]["2nd"].map((subject) => (
+                  <tr key={subject.id}>
+                    <td className="border px-4 py-2">{subject.courseCode}</td>
+                    <td className="border px-4 py-2">{subject.courseTitle}</td>
+                    <td className="border px-4 py-2">{subject.units.lec}</td>
+                    <td className="border px-4 py-2">{subject.units.lab}</td>
+                    <td className="border px-4 py-2">{subject.units.total}</td>
+                    <td className="border px-4 py-2">{subject.hoursPerWeek.lec}</td>
+                    <td className="border px-4 py-2">{subject.hoursPerWeek.lab}</td>
+                    <td className="border px-4 py-2">{subject.hoursPerWeek.total}</td>
+                    <td className="border px-4 py-2">{subject.hoursPerSemester.lec}</td>
+                    <td className="border px-4 py-2">{subject.hoursPerSemester.lab}</td>
+                    <td className="border px-4 py-2">{subject.hoursPerSemester.total}</td>
+                    <td className="border px-4 py-2">{subject.preRequisite}</td>
+                    <td className="border px-4 py-2">{subject.coRequisite}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
+))}
+
     </div>
 
 

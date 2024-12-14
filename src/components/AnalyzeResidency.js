@@ -1,109 +1,87 @@
 import React, { useState } from 'react';
-import { HiPlus, HiEye, HiPencil, HiTrash } from 'react-icons/hi';
+import { HiEye, HiUserCircle } from 'react-icons/hi';
+import manImage from '../images/man.png'; // Adjust the path based on your folder structure
 
-// Set the app element for accessibility
 const AnalyzeResidency = () => {
-    // Define state variables if needed
-    const [residencies, setResidencies] = useState([]);
+    // State to handle modal visibility
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
-    // Functions to handle button actions
-    const handleAddResidency = () => {
-        console.log('Add Residency clicked');
+    // State for sample residency details
+    const residencyDetails = {
+        name: 'Juan Dela Cruz',
+        program: 'Industrial Engineering',
+        yearLevel: '3rd Year',
+        profilePicture: <img src={manImage} alt="Profile" className="w-20 h-20 rounded-full object-cover" />,
+        remainingYears: 1, // Sample data for remaining years in college
     };
 
-    const handleShowResidencies = () => {
-        console.log('Show Residencies clicked');
+    // Open and close modal handlers
+    const handleViewResidency = () => {
+        setIsModalOpen(true);
     };
 
-    const handleEditResidency = () => {
-        console.log('Edit Residency clicked');
-    };
-
-    const handleDeleteResidency = () => {
-        console.log('Delete Residency clicked');
+    const closeModal = () => {
+        setIsModalOpen(false);
     };
 
     return (
         <div className="p-5 bg-white rounded-lg shadow-md">
             <h2 className="text-2xl font-semibold mb-3">Residency Management</h2>
             <p className="mb-4 text-gray-700">
-                Manage your residency information effectively. You can add new residency details, view your current residencies, edit information, and remove any residency you no longer need.
+                Manage your residency information effectively. Click below to view your residency details.
             </p>
 
-            {/* Residency Management Section */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Add Residency */}
-                <div className="bg-gray-100 p-4 rounded-lg border border-gray-300 shadow-sm hover:shadow-lg transition-shadow">
-                    <h3 className="text-xl font-semibold flex items-center">
-                        <HiPlus className="mr-2 text-green-500" /> Add Residency
-                    </h3>
-                    <p className="mt-2 text-gray-600">
-                        Add a new residency to keep your living arrangements up to date.
-                    </p>
-                    <button
-                        className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors"
-                        onClick={handleAddResidency}
-                    >
-                        Add Residency
-                    </button>
-                </div>
-
-                {/* Show Residencies */}
-                <div className="bg-gray-100 p-4 rounded-lg border border-gray-300 shadow-sm hover:shadow-lg transition-shadow">
-                    <h3 className="text-xl font-semibold flex items-center">
-                        <HiEye className="mr-2 text-blue-500" /> Show Residencies
-                    </h3>
-                    <p className="mt-2 text-gray-600">
-                        View all your residency details to ensure accurate representation of your living situation.
-                    </p>
-                    <button
-                        className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
-                        onClick={handleShowResidencies}
-                    >
-                        Show Residencies
-                    </button>
-                </div>
-
-                {/* Edit Residency */}
-                <div className="bg-gray-100 p-4 rounded-lg border border-gray-300 shadow-sm hover:shadow-lg transition-shadow">
-                    <h3 className="text-xl font-semibold flex items-center">
-                        <HiPencil className="mr-2 text-orange-500" /> Edit Residency
-                    </h3>
-                    <p className="mt-2 text-gray-600">
-                        Update residency details to ensure they reflect your current living arrangements.
-                    </p>
-                    <button
-                        className="mt-4 bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 transition-colors"
-                        onClick={handleEditResidency}
-                    >
-                        Edit Residency
-                    </button>
-                </div>
-
-                {/* Delete Residency */}
-                <div className="bg-gray-100 p-4 rounded-lg border border-gray-300 shadow-sm hover:shadow-lg transition-shadow">
-                    <h3 className="text-xl font-semibold flex items-center">
-                        <HiTrash className="mr-2 text-red-500" /> Delete Residency
-                    </h3>
-                    <p className="mt-2 text-gray-600">
-                        Remove any residency that you no longer wish to keep on your profile.
-                    </p>
-                    <button
-                        className="mt-4 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors"
-                        onClick={handleDeleteResidency}
-                    >
-                        Delete Residency
-                    </button>
-                </div>
-            </div>
-
-            {/* Conclusion Section */}
-            <div className="mt-6">
-                <h4 className="text-lg font-semibold">Manage Your Living Arrangements</h4>
-                <p className="text-gray-600">
-                    Use these tools to effectively manage your residency information and ensure everything is up to date.
+            {/* View Residency Card */}
+            <div className="bg-gray-100 p-4 rounded-lg border border-gray-300 shadow-sm hover:shadow-lg transition-shadow">
+                <h3 className="text-xl font-semibold flex items-center">
+                    <HiEye className="mr-2 text-blue-500" /> View My Residency
+                </h3>
+                <p className="mt-2 text-gray-600">
+                    View your residency details to ensure accurate representation of your living situation.
                 </p>
+                <button
+                    className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
+                    onClick={handleViewResidency}
+                >
+                    View Residency
+                </button>
             </div>
+ {/* Modal for Residency Information */}
+ {isModalOpen && (
+                <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50 z-50">
+                    <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md transition-all transform scale-95 hover:scale-100">
+                        <h3 className="text-2xl font-semibold mb-4 text-center">Residency Information</h3>
+
+                        <div className="flex items-center justify-start mb-6 space-x-6">
+                            {/* Profile Picture */}
+                            <div className="flex-shrink-0">
+                                <div className="w-20 h-20 rounded-full bg-gray-200 flex justify-center items-center text-gray-500">
+                                    {residencyDetails.profilePicture}
+                                </div>
+                            </div>
+                            <div>
+                                <p className="text-xl font-semibold text-gray-800">{residencyDetails.name}</p>
+                                <p className="text-gray-600">{residencyDetails.program}</p>
+                                <p className="text-gray-600">{residencyDetails.yearLevel}</p>
+                            </div>
+                        </div>
+
+                        <p className="mb-6 text-gray-700 text-center">
+                            You have <span className="font-bold text-blue-600">{residencyDetails.remainingYears}</span> more year(s) to finish your program.
+                        </p>
+
+                        <div className="flex justify-center">
+                            <button
+                                className="bg-red-600 text-white px-6 py-2 rounded-full hover:bg-red-700 focus:outline-none transition-colors"
+                                onClick={closeModal}
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 };

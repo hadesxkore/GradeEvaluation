@@ -1,9 +1,9 @@
 // src/components/CreateEvaluatorAccount.js
 import React, { useState, useEffect } from 'react';
-import { getFirestore, collection, addDoc, getDocs,  } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, onSnapshot   } from 'firebase/firestore';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '../firebase'; // Update this to your Firebase configuration file
-import { HiPlus, HiEye, HiSearch, HiCheckCircle } from 'react-icons/hi';
+import { HiPlus, HiEye, HiExclamation , HiCheckCircle } from 'react-icons/hi';
 import Modal from 'react-modal';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore'; // Import doc and setDoc
@@ -27,27 +27,145 @@ const CreateEvaluatorAccount = () => {
   const firestore = getFirestore();
   const [filteredEvaluators, setFilteredEvaluators] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showSuccessModalSec, setShowSuccessModalSec] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showSuccessDeleteModal, setShowSuccessDeleteModal] = useState(false);
 
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedEvaluator, setSelectedEvaluator] = useState(null);
+  
+  const [formData, setFormData] = useState({
+    firstName: "",
+    middleName: "",
+    lastName: "",
+    email: "",
+    contactNumber: "",
+    address: "",
+    facultyId: "",
+    birthdate: "",
+  });
   useEffect(() => {
     fetchEvaluators();
   }, [firestore]);
 
+  const handleEditClick = (evaluator) => {
+    setSelectedEvaluator(evaluator);
+    setFormData({
+      firstName: evaluator.firstName,
+      middleName: evaluator.middleName,
+      lastName: evaluator.lastName,
+      email: evaluator.email,
+      contactNumber: evaluator.contactNumber,
+      address: evaluator.address,
+      facultyId: evaluator.facultyId,
+      birthdate: evaluator.birthdate,
+    });
+    setShowEditModal(true);
+  };
+  const handleDeleteClick = (evaluator) => {
+    setSelectedEvaluator(evaluator);
+    setShowDeleteModal(true);
+  };
+  const handleContactChange = (e) => {
+    const value = e.target.value;
+    // Remove non-numeric characters
+    const numericValue = value.replace(/[^0-9]/g, '');
+    
+    // Ensure it starts with '09' and only has 11 digits
+    if (numericValue.length <= 11) {
+      if (numericValue.startsWith('09')) {
+        setFormData({ ...formData, contactNumber: numericValue });
+      } else {
+        setFormData({ ...formData, contactNumber: '09' + numericValue.slice(2) });
+      }
+    }
+  };
+  
+
+  
  
-  const fetchEvaluators = async () => {
+  const handleSaveChanges = async () => {
+    if (!selectedEvaluator || !selectedEvaluator.id) {
+      console.error("Evaluator ID is not defined");
+      return;
+    }
+  
     try {
-      const querySnapshot = await getDocs(collection(firestore, 'evaluators')); // Changed from 'users' to 'evaluators'
-      const evaluatorsList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      
-      console.log('Fetched Evaluators:', evaluatorsList); // Debugging line
-      setEvaluators(evaluatorsList);
-      setFilteredEvaluators(evaluatorsList);
+      const evaluatorRef = doc(firestore, 'evaluators', selectedEvaluator.id);
+  
+      // Update the evaluator document in Firestore
+      await updateDoc(evaluatorRef, {
+        firstName: formData.firstName,
+        middleName: formData.middleName,
+        lastName: formData.lastName,
+        email: formData.email,
+        facultyId: formData.facultyId,
+        birthdate: formData.birthdate,
+        address: formData.address,
+        contactNumber: formData.contactNumber,
+      });
+  
+      console.log("Evaluator updated successfully:", formData);
+      setShowEditModal(false);
+      setShowSuccessModalSec(true);
+  
+      // Real-time update listener (onSnapshot)
+      onSnapshot(evaluatorRef, (docSnapshot) => {
+        if (docSnapshot.exists()) {
+          // Update your local state or handle the new data from Firestore
+          const updatedEvaluator = docSnapshot.data();
+          console.log("Evaluator real-time data:", updatedEvaluator);
+  
+          // Optionally, you can update the state here
+          // setSelectedEvaluator(updatedEvaluator);
+        }
+      });
+    } catch (error) {
+      console.error("Error updating evaluator:", error);
+      alert('There was an error updating the evaluator information.');
+    }
+  };
+
+  // Handle delete evaluator
+  const handleDeleteEvaluator = async () => {
+    if (!selectedEvaluator || !selectedEvaluator.id) {
+      console.error("Evaluator ID is not defined for deletion");
+      return;
+    }
+
+    try {
+      const evaluatorRef = doc(firestore, 'evaluators', selectedEvaluator.id);
+      await deleteDoc(evaluatorRef);
+      setShowDeleteModal(false);
+      setShowSuccessDeleteModal(true);
+      fetchEvaluators(); // Refresh evaluator list
+    } catch (error) {
+      console.error("Error deleting evaluator:", error);
+    }
+  };
+ 
+  const fetchEvaluators = () => {
+    try {
+      const evaluatorsRef = collection(firestore, 'evaluators');
+  
+      // Real-time listener for the evaluators collection
+      onSnapshot(evaluatorsRef, (querySnapshot) => {
+        const evaluatorsList = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+  
+        console.log('Fetched Evaluators (Real-time):', evaluatorsList); // Debugging line
+  
+        // Update the state with the new list of evaluators
+        setEvaluators(evaluatorsList);
+        setFilteredEvaluators(evaluatorsList);
+      });
     } catch (error) {
       console.error('Error fetching evaluators:', error);
     }
   };
-  
-  
   useEffect(() => {
     const filtered = evaluators.filter(evaluator => {
       const facultyIdLower = evaluator.facultyId ? evaluator.facultyId.toLowerCase() : '';
@@ -61,39 +179,54 @@ const CreateEvaluatorAccount = () => {
     setFilteredEvaluators(filtered);
   }, [searchTerm, evaluators]);
 
-  const handleCreateAccount = async () => {
-    setError('');
-    setSuccess('');
-    try {
-      
-      // Create the user account using Firebase Auth
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
 
-      // Save evaluator's data directly into the 'evaluators' collection using UID as a document ID
-      await setDoc(doc(db, 'evaluators', user.uid), { // Changed 'users' to 'evaluators'
-        firstName,
-        middleName,
-        lastName,
-        email: user.email,
-        contactNumber,
-        address,
-        birthdate,
-        facultyId,
-        createdAt: new Date(),
-        role: 'evaluator', // Assign role as 'evaluator'
-      });
 
-      console.log('Evaluator created:', { firstName, lastName });
+const handleCreateAccount = async () => {
+  setError('');
+  setSuccess('');
+  try {
+    // Create the user account using Firebase Auth
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
 
-      setSuccess('Evaluator account created successfully!');
-      resetForm();
-      setShowSuccessModal(true); // Show success modal
-      fetchEvaluators(); // Refresh the list after creating
-    } catch (error) {
-      setError('Error creating account: ' + error.message);
-    }
-  };
+    // Save evaluator's data directly into the 'evaluators' collection using UID as a document ID
+    await setDoc(doc(db, 'evaluators', user.uid), {
+      firstName,
+      middleName,
+      lastName,
+      email: user.email,
+      contactNumber,
+      address,
+      birthdate,
+      facultyId,
+      createdAt: new Date(),
+      role: 'evaluator', // Assign role as 'evaluator'
+    });
+
+    console.log('Evaluator created:', { firstName, lastName });
+
+    setSuccess('Evaluator account created successfully!');
+    resetForm();
+    setShowSuccessModal(true); // Show success modal
+    fetchEvaluators(); // Refresh the list after creating
+
+    // Preventing navigation at this point
+    // If you're using react-router, do not call any redirect/navigation logic here
+
+  } catch (error) {
+    setError('Error creating account: ' + error.message);
+  }
+};
+
+ // Function to prevent entering numbers in First Name and Middle Name
+ const handleNameChange = (e, fieldName) => {
+  const value = e.target.value;
+  const updatedValue = value.replace(/[^A-Za-z\s]/g, ''); // Allow only letters and spaces
+  setFormData({ ...formData, [fieldName]: updatedValue });
+};
+
+
+  
   const resetForm = () => {
     setEmail('');
     setPassword('');
@@ -148,7 +281,6 @@ const CreateEvaluatorAccount = () => {
     </div>
   </div>
 </div>
-
 {/* Modal for creating an evaluator */}
 {showModal && (
   <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
@@ -192,6 +324,8 @@ const CreateEvaluatorAccount = () => {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Email"
           className="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring focus:ring-blue-500"
+          pattern="^[a-zA-Z0-9._%+-]+@bpsu.edu.ph$"
+          onBlur={(e) => setEmail(e.target.value + '@bpsu.edu.ph')} // Automatically append the domain
         />
         
         {/* Password Input */}
@@ -202,15 +336,26 @@ const CreateEvaluatorAccount = () => {
           placeholder="Password"
           className="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring focus:ring-blue-500"
         />
-        
         {/* Contact Number Input */}
-        <input
-          type="text"
-          value={contactNumber}
-          onChange={(e) => setContactNumber(e.target.value)}
-          placeholder="Contact Number"
-          className="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring focus:ring-blue-500"
-        />
+<input
+  type="text"
+  value={contactNumber}
+  onChange={(e) => {
+    let value = e.target.value.replace(/[^\d]/g, ''); // Allow only numbers
+    if (value.length > 11) value = value.slice(0, 11); // Limit to 11 digits
+
+    // Ensure it starts with "09"
+    if (value.length === 1 && value !== '0') value = '09'; // Automatically add "09" if starting with a single digit
+
+    // If the value starts with '09', allow the rest of the input
+    if (value.startsWith('09') && value.length <= 11) {
+      setContactNumber(value);
+    }
+  }}
+  placeholder="Contact Number"
+  className="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring focus:ring-blue-500"
+/>
+
         
         {/* Address Input */}
         <input
@@ -227,15 +372,22 @@ const CreateEvaluatorAccount = () => {
           value={birthdate}
           onChange={(e) => setBirthdate(e.target.value)}
           className="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring focus:ring-blue-500"
+          max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]} // Disable dates for users under 18
         />
         
         {/* Faculty ID Input */}
         <input
           type="text"
           value={facultyId}
-          onChange={(e) => setFacultyId(e.target.value)}
+          onChange={(e) => {
+            const value = e.target.value.replace(/[^\d]/g, ''); // Allow only digits
+            if (value.length <= 7) {
+              setFacultyId(value.length > 2 ? `${value.slice(0, 2)}-${value.slice(2)}` : value);
+            }
+          }}
           placeholder="Faculty ID"
           className="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring focus:ring-blue-500"
+          maxLength="8"
         />
       </div>
       
@@ -263,12 +415,12 @@ const CreateEvaluatorAccount = () => {
       <div className="flex items-center justify-center mb-4">
         <HiCheckCircle className="text-green-500 text-7xl" /> {/* Success Icon */}
       </div>
-      <h2 className="text-2xl font-semibold text-center text-green-600">Success</h2>
-      <p className="text-center mt-2 text-gray-700">{success}</p>
-      <div className="mt-6">
+      <h3 className="text-2xl text-center text-green-500">Success</h3>
+      <p className="text-center mt-4">Evaluator account has been created successfully!</p>
+      <div className="flex justify-center mt-6">
         <button
-          className="w-full bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors"
-          onClick={() => setShowSuccessModal(false)} // Close the success modal
+          className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
+          onClick={() => setShowSuccessModal(false)} // Close modal when clicked
         >
           Close
         </button>
@@ -276,6 +428,7 @@ const CreateEvaluatorAccount = () => {
     </div>
   </div>
 )}
+
 <div className="bg-white shadow-lg rounded-lg overflow-hidden">
   <div className="p-6 bg-gray-100">
     <input
@@ -299,6 +452,8 @@ const CreateEvaluatorAccount = () => {
           <th className="py-4 px-5 text-left">Address</th>
           <th className="py-4 px-5 text-left">Role</th>
           <th className="py-4 px-5 text-left">Contact Number</th>
+          <th className="py-4 px-5 text-left">Actions</th> {/* New Action column */}
+
         </tr>
       </thead>
       <tbody className="bg-white">
@@ -314,6 +469,21 @@ const CreateEvaluatorAccount = () => {
               <td className="py-3 px-5 text-center">{evaluator.address}</td>
               <td className="py-3 px-5 text-center">{evaluator.role}</td>
               <td className="py-3 px-5 text-center">{evaluator.contactNumber}</td>
+        
+              <td className="py-3 px-5 text-center">
+                    <button
+                      className="bg-blue-500 text-white px-4 py-2 rounded-lg"
+                      onClick={() => handleEditClick(evaluator)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="bg-red-500 text-white px-4 py-2 rounded-lg ml-2"
+                      onClick={() => handleDeleteClick(evaluator)}
+                    >
+                      Delete
+                    </button>
+                  </td>
             </tr>
           ))
         ) : (
@@ -325,6 +495,233 @@ const CreateEvaluatorAccount = () => {
     </table>
   </div>
 </div>
+
+{showEditModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center transition-opacity duration-300">
+    <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-4xl transform transition-all duration-300 ease-in-out scale-95 hover:scale-100">
+      <h2 className="text-2xl font-semibold text-gray-800 mb-6">Edit Evaluator</h2>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        {/* Left Column */}
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">First Name</label>
+            <input
+              id="firstName"
+              type="text"
+              value={formData.firstName}
+              onChange={(e) => handleNameChange(e, 'firstName')}
+              className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+              required
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="middleName" className="block text-sm font-medium text-gray-700">Middle Name</label>
+            <input
+              id="middleName"
+              type="text"
+              value={formData.middleName}
+              onChange={(e) => handleNameChange(e, 'middleName')}
+              className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
+            <input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="facultyId" className="block text-sm font-medium text-gray-700">Faculty ID</label>
+            <input
+              id="facultyId"
+              type="text"
+              value={formData.facultyId}
+              onChange={(e) => setFormData({ ...formData, facultyId: e.target.value })}
+              className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+              required
+            />
+          </div>
+        </div>
+
+        {/* Right Column */}
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">Last Name</label>
+            <input
+              id="lastName"
+              type="text"
+              value={formData.lastName}
+              onChange={(e) => handleNameChange(e, 'lastName')}
+              className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="birthdate" className="block text-sm font-medium text-gray-700">Birthdate</label>
+            <input
+              id="birthdate"
+              type="date"
+              value={formData.birthdate}
+              onChange={(e) => setFormData({ ...formData, birthdate: e.target.value })}
+              className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="address" className="block text-sm font-medium text-gray-700">Address</label>
+            <input
+              id="address"
+              type="text"
+              value={formData.address}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="contactNumber" className="block text-sm font-medium text-gray-700">Contact Number</label>
+            <input
+              id="contactNumber"
+              type="text"
+              value={formData.contactNumber}
+              onChange={(e) => handleContactChange(e)}
+              className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+              pattern="09\d{9}" // Only allows numbers starting with '09' and 11 digits in total
+              title="Contact Number must start with '09' and be 11 digits long"
+              required
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-6 flex justify-end space-x-4">
+        <button
+          onClick={handleSaveChanges}
+          className="bg-green-700 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-600 transition-colors"
+        >
+          Save Changes
+        </button>
+        <button
+          onClick={() => setShowEditModal(false)}
+          className="bg-red-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-400 transition-colors"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* Delete Confirmation Modal */}
+{showDeleteModal && (
+  <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center z-50">
+    <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-sm transform transition-all duration-300 scale-95 hover:scale-100">
+      
+      {/* Icon Section */}
+      <div className="flex justify-center mb-4">
+        <HiExclamation className="text-yellow-500 text-6xl" />
+      </div>
+
+      {/* Modal Title */}
+      <h2 className="text-2xl font-semibold text-gray-800 mb-6 text-center">
+        Are you sure you want to delete{" "}
+        <span className="font-bold">{selectedEvaluator?.firstName}{" "}{selectedEvaluator?.lastName}</span>?
+      </h2>
+      
+      {/* Action Buttons */}
+      <div className="flex justify-center gap-4 mt-6">
+        <button
+          onClick={handleDeleteEvaluator}
+          className="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition-all"
+        >
+          Yes, Delete
+        </button>
+        <button
+          onClick={() => setShowDeleteModal(false)}
+          className="bg-gray-400 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-500 transition-all"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+
+
+{/* Success Modal */}
+{showSuccessModalSec && (
+  <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center z-50">
+    <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-sm transform transition-all duration-300 scale-95 hover:scale-100">
+      <div className="flex justify-center mb-4">
+        <HiCheckCircle className="text-green-500 text-7xl" />
+      </div>
+      
+      <h2 className="text-2xl font-semibold text-gray-800 text-center mb-4">
+        Success!
+      </h2>
+      <p className="text-center text-gray-600 mb-6">
+  The evaluator's information has been successfully updated.
+</p>
+
+
+      <div className="flex justify-center">
+        <button
+          onClick={() => setShowSuccessModalSec(false)}
+          className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-all"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* Success Delete Confirmation Modal */}
+{showSuccessDeleteModal && (
+  <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center z-50">
+    <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-sm transform transition-all duration-300 scale-95 hover:scale-100">
+      
+      {/* Icon Section */}
+      <div className="flex justify-center mb-4">
+        <HiCheckCircle className="text-red-500 text-6xl" />
+      </div>
+
+      {/* Modal Title */}
+      <h2 className="text-2xl font-semibold text-gray-800 mb-4 text-center">
+        Success!
+      </h2>
+      
+      {/* Modal Message */}
+      <p className="text-lg text-gray-600 mb-6 text-center">
+        The evaluator <span className="font-semibold">{selectedEvaluator?.firstName} {selectedEvaluator?.lastName}</span> has been successfully deleted.
+      </p>
+      
+      {/* Action Button */}
+      <div className="flex justify-center mt-4">
+        <button
+          onClick={() => setShowSuccessDeleteModal(false)}
+          className="bg-red-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-600 transition-all"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
 
     </div>

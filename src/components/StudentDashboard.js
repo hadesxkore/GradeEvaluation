@@ -178,15 +178,7 @@ const StudentDashboard = () => {
       </Link>
     </li>
 
-    <li>
-      <Link
-        to="/student-dashboard/download-courses"
-        className="flex items-center px-6 py-3 bg-gray-100 rounded-lg shadow hover:bg-blue-100 transition-all duration-200"
-      >
-        <HiOutlineCollection className="mr-3 text-2xl text-blue-600" />
-        <span className="text-gray-800 font-medium">Download Courses to Enroll</span>
-      </Link>
-    </li>
+    
   </ul>
 )}
 

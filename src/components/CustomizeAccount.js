@@ -20,6 +20,7 @@ const CustomizeAccount = () => {
     yearLevel:'',
     profilePicture: '',
     studentId: '', // Add studentId to the state
+
   });
   const [profilePictureFile, setProfilePictureFile] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -57,11 +58,46 @@ const CustomizeAccount = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setUserData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
+  
+    // If the name is "contactNumber", we enforce the logic for the phone number
+    if (name === "contactNumber") {
+      // Remove non-numeric characters
+      let formattedValue = value.replace(/[^0-9]/g, '');
+  
+      // Limit to 11 digits
+      if (formattedValue.length > 11) {
+        formattedValue = formattedValue.slice(0, 11);
+      }
+  
+      // Ensure the value starts with "09" and allow user to add the remaining digits
+      if (formattedValue.length <= 2) {
+        formattedValue = '09' + formattedValue.slice(2); // Prepend "09" to any value less than 2 digits
+      }
+  
+      // Update the user data with the formatted contact number
+      setUserData((prevData) => ({
+        ...prevData,
+        [name]: formattedValue,
+      }));
+    } else if (["firstName", "middleName", "lastName"].includes(name)) {
+      // For "firstName", "middleName", and "lastName", allow only letters, spaces, hyphens, and apostrophes
+      let formattedValue = value.replace(/[^a-zA-Z\s'-]/g, ''); // Remove anything that isn't a letter, space, hyphen, or apostrophe
+  
+      setUserData((prevData) => ({
+        ...prevData,
+        [name]: formattedValue,
+      }));
+    } else {
+      // For other fields, handle them as usual
+      setUserData((prevData) => ({
+        ...prevData,
+        [name]: value,
+      }));
+    }
   };
+  
+  
+
 
   const handleProfilePictureChange = (e) => {
     if (e.target.files[0]) {
@@ -75,6 +111,8 @@ const CustomizeAccount = () => {
       }));
     }
   };
+
+  
 
   const handleSaveChanges = async (e) => {
     e.preventDefault();
@@ -109,6 +147,7 @@ const CustomizeAccount = () => {
         program: userData.program,
         yearLevel: userData.yearLevel, // Add this line
         profilePicture: profilePictureUrl,
+
       });
 
       // Update Firebase authentication profile only if the URL is valid
@@ -128,7 +167,7 @@ const CustomizeAccount = () => {
   };
 
   return (
-    <div className="bg-gray-100 p-6 rounded-lg shadow-lg max-w-5xl mx-auto">
+    <div className="bg-gray-100 p-6 rounded-lg shadow-lg max-w-5xl mx-auto mt-32">
       <h2 className="text-3xl font-semibold mb-6 text-center">Student Information</h2>
 
       {message && (
@@ -137,151 +176,163 @@ const CustomizeAccount = () => {
         </div>
       )}
 
-      <form onSubmit={handleSaveChanges} className="flex flex-col md:flex-row gap-6">
-        <div className="flex flex-col w-full md:w-1/3 items-center">
-          <div className="relative w-48 h-48 mb-4">
-            {userData.profilePicture ? (
-              <img
-                src={userData.profilePicture}
-                alt="Profile"
-                className="w-full h-full rounded-full object-cover"
-              />
-            ) : (
-              <HiOutlineUserCircle className="w-full h-full text-gray-400" />
-            )}
-            <label className="absolute inset-0 flex items-center justify-center ">
-              <span className="sr-only">Change profile photo</span>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleProfilePictureChange}
-                className="text-sm text-gray-600 opacity-0 absolute inset-0 cursor-pointer"
-              />
-            </label>
-          </div>
-          <button
-            type="button"
-            className="mt-2 w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg transition-colors"
-            onClick={() => document.querySelector('input[type="file"]').click()}
-          >
-            Choose Profile Picture
-          </button>
-          <div className="mt-4 bg-white p-4 rounded-lg shadow-lg transition-transform transform hover:scale-105 w-full max-w-md flex flex-col items-center justify-center">
-  <p className="text-sm font-medium text-gray-600">Student ID</p>
-  <p className="text-2xl font-bold text-blue-700">{userData.studentId}</p>
-</div>
+<form onSubmit={handleSaveChanges} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+  {/* Left Column */}
+  <div className="flex flex-col items-center">
+  <div className="w-64 p-4 bg-white rounded-lg shadow-md border border-gray-300">
+    <div className="relative w-48 h-48 mb-4 mx-auto">
+      {userData.profilePicture ? (
+        <img
+          src={userData.profilePicture}
+          alt="Profile"
+          className="w-full h-full rounded-full object-cover"
+        />
+      ) : (
+        <HiOutlineUserCircle className="w-full h-full text-gray-400" />
+      )}
+      <label className="absolute inset-0 flex items-center justify-center">
+        <span className="sr-only">Change profile photo</span>
+        <input
+          type="file"
+          accept="image/*"
+          onChange={handleProfilePictureChange}
+          className="text-sm text-gray-600 opacity-0 absolute inset-0 cursor-pointer"
+        />
+      </label>
+    </div>
+  </div>
+
+    <button
+      type="button"
+      className="mt-2  bg-blue-500 hover:bg-blue-600 text-white py-2 px-36 rounded-lg transition-colors"
+      onClick={() => document.querySelector('input[type="file"]').click()}
+    >
+      Choose Profile Picture
+    </button>
+    <div className="mt-4 bg-white p-4 rounded-lg shadow-lg transition-transform transform hover:scale-105 w-full max-w-md flex flex-col items-center justify-center">
+      <p className="text-sm font-medium text-gray-600">Student ID</p>
+      <p className="text-2xl font-bold text-blue-700">{userData.studentId}</p>
+    </div>
+  </div>
+
+ {/* Right Column */}
+<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  <div>
+    <label className="block text-gray-700 mb-2">First Name</label>
+    <input
+      type="text"
+      name="firstName"
+      value={userData.firstName}
+      onChange={handleInputChange}
+      className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+      required
+    />
+  </div>
+
+  <div>
+    <label className="block text-gray-700 mb-2">Middle Name</label>
+    <input
+      type="text"
+      name="middleName"
+      value={userData.middleName}
+      onChange={handleInputChange}
+      className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+    />
+  </div>
+
+  <div>
+    <label className="block text-gray-700 mb-2">Last Name</label>
+    <input
+      type="text"
+      name="lastName"
+      value={userData.lastName}
+      onChange={handleInputChange}
+      className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+      required
+    />
+  </div>
 
 
-        </div>
 
-        <div className="flex flex-col gap-4 w-full md:w-2/3">
-          <div>
-            <label className="block text-gray-700 mb-2">First Name</label>
-            <input
-              type="text"
-              name="firstName"
-              value={userData.firstName}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
+    <div>
+      <label className="block text-gray-700 mb-2">Email</label>
+      <input
+        type="email"
+        name="email"
+        value={userData.email}
+        className="w-full px-4 py-2 border rounded-lg bg-gray-100 cursor-not-allowed"
+        readOnly
+      />
+    </div>
 
-          <div>
-            <label className="block text-gray-700 mb-2">Middle Name</label>
-            <input
-              type="text"
-              name="middleName"
-              value={userData.middleName}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+   
 
-          <div>
-            <label className="block text-gray-700 mb-2">Last Name</label>
-            <input
-              type="text"
-              name="lastName"
-              value={userData.lastName}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
+    <div>
+      <label className="block text-gray-700 mb-2">Year Level</label>
+      <select
+        name="yearLevel"
+        value={userData.yearLevel}
+        onChange={handleInputChange}
+        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        required
+      >
+        <option value="">Select Year Level</option>
+        <option value="1st year">1st Year</option>
+        <option value="2nd year">2nd Year</option>
+        <option value="3rd year">3rd Year</option>
+        <option value="4th year">4th Year</option>
+      </select>
+    </div>
 
-          <div>
-            <label className="block text-gray-700 mb-2">Email</label>
-            <input
-              type="email"
-              name="email"
-              value={userData.email}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2 border rounded-lg bg-gray-100 cursor-not-allowed"
-              readOnly
-            />
-          </div>
- {/* New Year Level Dropdown Field */}
-<div>
-  <label className="block text-gray-700 mb-2">Year Level</label>
-  <select
-    name="yearLevel"
-    value={userData.yearLevel}
+    <div>
+      <label className="block text-gray-700 mb-2">Address</label>
+      <input
+        type="text"
+        name="address"
+        value={userData.address}
+        onChange={handleInputChange}
+        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
+
+    <div>
+  <label className="block text-gray-700 mb-2">Contact Number</label>
+  <input
+    type="text"
+    name="contactNumber"
+    value={userData.contactNumber}
     onChange={handleInputChange}
+    maxLength="11"
+    pattern="\d{11}"
+    placeholder="09XXXXXXXXX"
     className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-    required
-  >
-    <option value="">Select Year Level</option>
-    <option value="1st year">1st Year</option>
-    <option value="2nd year">2nd Year</option>
-    <option value="3rd year">3rd Year</option>
-    <option value="4th year">4th Year</option>
-  </select>
+    onFocus={(e) => e.target.setSelectionRange(2, 2)} // Keep the cursor after "09"
+  />
 </div>
 
 
-          <div>
-            <label className="block text-gray-700 mb-2">Address</label>
-            <input
-              type="text"
-              name="address"
-              value={userData.address}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+    <div>
+      <label className="block text-gray-700 mb-2">Program</label>
+      <input
+        type="text"
+        name="program"
+        value={userData.program}
+        onChange={handleInputChange}
+        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
+  </div>
 
-          <div>
-            <label className="block text-gray-700 mb-2">Contact Number</label>
-            <input
-              type="text"
-              name="contactNumber"
-              value={userData.contactNumber}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-gray-700 mb-2">Program</label>
-            <input
-              type="text"
-              name="program"
-              value={userData.program}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="mt-4 w-full bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg transition-colors disabled:bg-gray-400"
-          >
-            {loading ? 'Saving...' : 'Save Changes'}
-          </button>
-        </div>
-      </form>
+  <div className="col-span-1 md:col-span-2">
+    <button
+      type="submit"
+      disabled={loading}
+      className="w-full bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg transition-colors disabled:bg-gray-400"
+    >
+      {loading ? 'Saving...' : 'Save Changes'}
+    </button>
+  </div>
+</form>
 
       <Modal
   isOpen={isModalOpen}
