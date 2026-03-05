@@ -124,8 +124,7 @@ const SignUp = () => {
             <HiOutlineIdentification className="text-4xl text-teal-300" />
           </div>
           <h2 className="text-4xl font-bold tracking-tight mb-4">
-            Grade Evaluation<br />
-            <span className="text-teal-400">System</span>
+            OptiEval
           </h2>
           <p className="text-slate-400 max-w-xs leading-relaxed">
             Create your student account to access your academic records, evaluation certificates, and course enrollments.
@@ -157,7 +156,7 @@ const SignUp = () => {
             <div className="w-14 h-14 bg-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
               <HiOutlineIdentification className="text-3xl text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-slate-800">Grade Evaluation System</h2>
+            <h2 className="text-2xl font-bold text-slate-800">OptiEval</h2>
           </div>
 
           <h1 className="text-3xl font-bold text-slate-900 mb-2">Create Account</h1>

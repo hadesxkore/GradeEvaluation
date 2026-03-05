@@ -79,7 +79,7 @@ const Login = () => {
           </div>
           <h2 className="text-4xl font-bold tracking-tight mb-4">
             Welcome Back<br />
-            <span className="text-teal-400">to GradeEval</span>
+            <span className="text-teal-400">to OptiEval</span>
           </h2>
           <p className="text-slate-400 text-sm leading-relaxed max-w-xs">
             Sign in to your account to access your academic records, evaluation certificates, and all student resources.
@@ -109,7 +109,7 @@ const Login = () => {
             <div className="w-14 h-14 bg-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
               <HiOutlineAcademicCap className="text-3xl text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-slate-800">GradeEval System</h2>
+            <h2 className="text-2xl font-bold text-slate-800">OptiEval</h2>
           </div>
 
           <h1 className="text-3xl font-bold text-slate-900 mb-2">Sign In</h1>
