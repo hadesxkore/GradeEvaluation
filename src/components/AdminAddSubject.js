@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { db } from "../firebase";
 import { collection, addDoc, getDocs } from "firebase/firestore";
+import { sileo } from 'sileo';
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import bpsuLogo from '../images/bpsu.png';
@@ -151,7 +152,7 @@ const AdminAddDashboard = () => {
   /* save subject */
   const handleSaveSubject = async () => {
     if (!courseCode || !courseTitle || !modalSem) {
-      alert("Please fill in all required fields.");
+      sileo.warning({ title: 'Missing Fields', description: 'Please fill in the course code, title, and select a semester.' });
       return;
     }
     setIsSaving(true);
@@ -168,10 +169,11 @@ const AdminAddDashboard = () => {
       setLoadedKeys(prev => { const n = new Set(prev); n.delete(`${modalYear}-${modalSem}`); return n; });
       setIsModalOpen(false);
       setIsSuccessOpen(true);
+      sileo.success({ title: 'Subject Added!', description: `${courseCode} has been added to the ${modalSem} semester curriculum.` });
       resetForm();
     } catch (e) {
       console.error(e);
-      alert("Failed to add subject. Try again.");
+      sileo.error({ title: 'Save Failed', description: 'Failed to add subject. Please try again.' });
     } finally {
       setIsSaving(false);
     }

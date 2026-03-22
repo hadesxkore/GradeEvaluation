@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { HiOutlineX, HiOutlineExclamation, HiUpload, HiEye, HiCheckCircle, HiExclamation } from 'react-icons/hi';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+// Firebase Storage removed — using Cloudinary for file uploads
 import { collection, getDocs, doc, getDoc, updateDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase'; // Ensure your Firestore instance and auth are imported
-import { toast } from 'react-toastify'; // Adjust this based on your toast library
+import { sileo } from 'sileo';
 import { ClipLoader } from 'react-spinners';
 
 
@@ -47,8 +47,8 @@ const UploadGrades = () => {
 
     useEffect(() => {
         const fetchUserLevel = async () => {
+            // currentUser is null on initial render while Firebase auth resolves — just wait
             if (!currentUser || !currentUser.uid) {
-                console.error('Current user is not defined');
                 setLoading(false);
                 return;
             }
@@ -61,9 +61,8 @@ const UploadGrades = () => {
                     const userData = userDoc.data();
                     const level = userData.yearLevel;
                     setYearLevel(level);
-                    console.log('Year Level:', level);
                 } else {
-                    console.error('User document not found!');
+                    console.error('User document not found in Firestore.');
                 }
             } catch (error) {
                 console.error('Error fetching user data:', error);
@@ -173,24 +172,45 @@ const UploadGrades = () => {
 
         // Check if a file has been selected before proceeding
         if (!selectedFile) {
-            toast.error("Please upload a file for verification before saving grades.");
+            sileo.error({ title: 'File Required', description: 'Please upload a file for verification before saving grades.' });
             return; // Exit the function if no file is selected
         }
 
         setIsLoading(true); // Start loading
 
         try {
-            const storage = getStorage(); // Initialize Firebase Storage
+            // Upload file to Cloudinary using unsigned preset
+            const CLOUDINARY_CLOUD_NAME = 'dqndurz00';
+            const CLOUDINARY_UPLOAD_PRESET = 'gradeeval';
+
+            // PDFs upload as 'image' (Cloudinary supports this and allows fl_attachment transformation)
+            // Other non-image files (docx, etc.) upload as 'raw'
+            const resourceType = (selectedFile.type.startsWith('image/') || selectedFile.type === 'application/pdf')
+                ? 'image'
+                : 'raw';
+
+            const cloudinaryForm = new FormData();
+            cloudinaryForm.append('file', selectedFile);
+            cloudinaryForm.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+            cloudinaryForm.append('folder', 'uploads');
+
+            const cloudinaryRes = await fetch(
+                `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`,
+                { method: 'POST', body: cloudinaryForm }
+            );
+            if (!cloudinaryRes.ok) throw new Error('Cloudinary upload failed.');
+            const cloudinaryData = await cloudinaryRes.json();
+            const fileUrl = cloudinaryData.secure_url;
 
             // Reference to the grades document for the current user
-            const gradesDocRef = doc(db, 'grades', currentUser.uid); // This is the document for the user's grades
-            const yearLevelCollectionRef = collection(gradesDocRef, yearLevel); // Reference to the user's year level
+            const gradesDocRef = doc(db, 'grades', currentUser.uid);
+            const yearLevelCollectionRef = collection(gradesDocRef, yearLevel);
 
-            // Before uploading the new grades, delete the previous semester's grades and store them in a new collection
+            // Determine current and previous semester
             const currentSemester = selectedSemester === '1st' ? 'firstSemester' : 'secondSemester';
             const previousSemester = selectedSemester === '1st' ? 'secondSemester' : 'firstSemester';
 
-            // Fetch previous semester grades and store them in a new collection for archival purposes
+            // Archive previous semester grades before saving new ones
             const previousSemesterDocRef = doc(yearLevelCollectionRef, previousSemester);
             const previousSemesterDoc = await getDoc(previousSemesterDocRef);
 
@@ -198,22 +218,15 @@ const UploadGrades = () => {
                 const previousGrades = previousSemesterDoc.data().grades || [];
                 const archivedGradesRef = collection(db, 'archivedGrades', currentUser.uid, yearLevel);
                 const archivedSemesterDocRef = doc(archivedGradesRef, previousSemester);
-
-                // Save the previous semester grades in the archived collection
                 await setDoc(archivedSemesterDocRef, { grades: previousGrades });
             }
 
             // Delete the previous semester grades from the current collection
             await deleteDoc(previousSemesterDocRef);
 
-            // Proceed with saving the new grades (same as your existing logic)
+            // Create/update the current semester document
             const semesterDocRef = doc(yearLevelCollectionRef, currentSemester);
-
-            await setDoc(semesterDocRef, { fileUrl: '' }); // Initialize with an empty fileUrl
-
-            const storageRef = ref(storage, `uploads/${selectedFile.name}`);
-            await uploadBytes(storageRef, selectedFile);
-            const fileUrl = await getDownloadURL(storageRef);
+            await setDoc(semesterDocRef, { fileUrl: '' }); // Initialize with empty fileUrl
 
             // Loop through subjects and save each grade in the semester document
             const gradesData = [];
@@ -245,7 +258,7 @@ const UploadGrades = () => {
             setSelectedFile(null); // Clear selected file after saving
         } catch (error) {
             console.error('Error saving grades:', error);
-            toast.error("An error occurred while saving grades.");
+            sileo.error({ title: 'Save Failed', description: 'An error occurred while saving grades. Please try again.' });
         } finally {
             setIsLoading(false); // Stop loading
         }
@@ -753,7 +766,14 @@ return (
                         {fileUrl && (
                             <div className="mt-5 flex items-center gap-3 bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3">
                                 <HiEye className="text-indigo-500 shrink-0" />
-                                <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-600 font-semibold hover:underline">View uploaded verification file (ROG)</a>
+                                <a
+                                    href={fileUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-sm text-indigo-600 font-semibold hover:underline"
+                                >
+                                    View uploaded verification file (ROG)
+                                </a>
                             </div>
                         )}
                     </div>

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { getAuth, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth, db } from '../firebase';
+import { sileo } from 'sileo';
 import {
   HiPlus, HiEye, HiExclamation, HiCheckCircle, HiMail,
   HiOutlineUserAdd, HiOutlineSearch, HiOutlinePencil,
@@ -124,6 +125,7 @@ const CreateEvaluatorAccount = () => {
       });
       setShowEditModal(false);
       setShowSuccessModalSec(true);
+      sileo.success({ title: 'Changes Saved!', description: `${formData.firstName} ${formData.lastName}'s information has been updated.` });
     } catch (error) { console.error(error); }
   };
 
@@ -133,6 +135,7 @@ const CreateEvaluatorAccount = () => {
       await deleteDoc(doc(firestore, 'evaluators', selectedEvaluator.id));
       setShowDeleteModal(false);
       setShowSuccessDeleteModal(true);
+      sileo.success({ title: 'Evaluator Deleted', description: `${selectedEvaluator.firstName} ${selectedEvaluator.lastName} has been removed.` });
       fetchEvaluators();
     } catch (error) { console.error(error); }
   };
@@ -177,9 +180,12 @@ const CreateEvaluatorAccount = () => {
       resetForm();
       setShowModal(false);
       setShowSuccessModal(true);
+      sileo.success({ title: 'Account Created!', description: `Evaluator account for ${firstName} ${lastName} is ready.` });
       fetchEvaluators();
-    } catch (error) { setError('Error: ' + error.message); }
-    finally { setIsCreating(false); }
+    } catch (error) {
+      setError('Error: ' + error.message);
+      sileo.error({ title: 'Creation Failed', description: error.message || 'Could not create the evaluator account.' });
+    } finally { setIsCreating(false); }
   };
 
   const resetForm = () => {

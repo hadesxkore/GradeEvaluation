@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { db, storage } from '../firebase';
+import { db } from '../firebase'; // storage import removed — using Cloudinary
 import { collection, getDocs, deleteDoc, getDoc, setDoc, doc, onSnapshot, query, where } from 'firebase/firestore';
-import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
+// Firebase Storage removed — all uploads go through Cloudinary; deletes remove only the Firestore record
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { sileo } from 'sileo';
 import {
   HiOutlineUpload,
   HiOutlineEye,
@@ -66,34 +67,73 @@ const ManageCourses = () => {
     fetchFiles();
   }, [auth.currentUser]);
 
-  /* ── Upload handler ── */
+  /* ── Cloudinary config ── */
+  const CLOUDINARY_CLOUD_NAME = 'dqndurz00';
+  const CLOUDINARY_UPLOAD_PRESET = 'gradeeval'; // must be Unsigned in Cloudinary console
+
+  /**
+   * Build the correct view URL for a file.
+   * Cloudinary image/upload PDFs are served inline by default — no transformation needed.
+   * Just return the direct URL so the browser's native PDF viewer handles it.
+   */
+  const getViewUrl = (fileUrl) => fileUrl ?? '';
+
+  /**
+   * Resource type for Cloudinary upload:
+   * - Images & PDFs → 'image' (Cloudinary supports PDFs under image/upload
+   *   and we can then apply fl_attachment transformation on the view URL)
+   * - Word docs, zip, etc. → 'raw'
+   */
+  const getCloudinaryResourceType = (file) => {
+    if (file.type.startsWith('image/') || file.type === 'application/pdf') {
+      return 'image';
+    }
+    return 'raw';
+  };
+
+  /* ── Upload handler (Cloudinary) ── */
   const handleUploadFile = async () => {
     if (!file) return;
     setUploading(true);
-    const storageRef = ref(storage, `courses/${file.name}`);
-    const uploadTask = uploadBytesResumable(storageRef, file);
+    try {
+      const resourceType = getCloudinaryResourceType(file);
 
-    uploadTask.on(
-      'state_changed',
-      null,
-      (err) => { console.error(err); setUploading(false); },
-      async () => {
-        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-        const userId = auth.currentUser.uid;
-        await setDoc(doc(db, 'coursesToEnroll', userId, 'files', file.name), {
-          fileName: file.name,
-          fileUrl: downloadURL,
-          uploadedAt: new Date(),
-        });
-        setUploadedFiles((prev) => [...prev, { fileName: file.name, fileUrl: downloadURL }]);
-        setUploading(false);
-        setFile(null);
-        setIsUploadModalOpen(false);
-      }
-    );
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+      formData.append('folder', 'courses');
+
+      // Use the correct resource_type endpoint so Chrome can open the file
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`,
+        { method: 'POST', body: formData }
+      );
+      if (!res.ok) throw new Error('Cloudinary upload failed.');
+      const data = await res.json();
+      const downloadURL = data.secure_url;
+
+      const userId = auth.currentUser.uid;
+      await setDoc(doc(db, 'coursesToEnroll', userId, 'files', file.name), {
+        fileName: file.name,
+        fileUrl: downloadURL,
+        resourceType, // store so we know how to display it
+        uploadedAt: new Date(),
+      });
+      setUploadedFiles((prev) => [...prev, { fileName: file.name, fileUrl: downloadURL, resourceType }]);
+      setFile(null);
+      setIsUploadModalOpen(false);
+      sileo.success({ title: 'File Uploaded!', description: `${file.name} was uploaded successfully.` });
+    } catch (err) {
+      console.error('Upload error:', err);
+      sileo.error({ title: 'Upload Failed', description: 'Could not upload the file. Please try again.' });
+    } finally {
+      setUploading(false);
+    }
   };
 
   /* ── Delete handler ── */
+  // Note: Cloudinary deletion from client-side requires a signed request (API secret).
+  // We delete the Firestore record so the file no longer appears in the UI.
   const handleDelete = async () => {
     if (!fileToDelete) return;
     try {
@@ -102,12 +142,13 @@ const ManageCourses = () => {
       const snap = await getDoc(fileRef);
       if (!snap.exists()) return;
       await deleteDoc(fileRef);
-      await deleteObject(ref(storage, `courses/${fileToDelete}`));
       setUploadedFiles((prev) => prev.filter((f) => f.fileName !== fileToDelete));
       setIsDeleteConfirmOpen(false);
       setFileToDelete(null);
+      sileo.success({ title: 'File Deleted', description: 'The file has been removed from your uploads.' });
     } catch (err) {
       console.error(err);
+      sileo.error({ title: 'Delete Failed', description: 'Could not remove the file. Please try again.' });
     }
   };
 
@@ -323,8 +364,12 @@ const ManageCourses = () => {
                     <HiOutlineDocumentText className="text-xl text-indigo-500 shrink-0" />
                     <span className="flex-1 text-sm font-medium text-slate-700 truncate">{f.fileName}</span>
                     <div className="flex items-center gap-2 shrink-0">
-                      <a href={f.fileUrl} target="_blank" rel="noopener noreferrer"
-                        className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
+                      <a
+                        href={getViewUrl(f.fileUrl, f.fileName)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+                      >
                         <HiOutlineEye /> View
                       </a>
                       <button

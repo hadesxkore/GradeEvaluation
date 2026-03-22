@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getAuth, updateProfile } from 'firebase/auth';
 import { getFirestore, doc, getDoc, updateDoc } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { sileo } from 'sileo';
+// Firebase Storage removed — using Cloudinary instead
 import {
   HiOutlineUser,
   HiOutlineMail,
@@ -51,8 +52,11 @@ const CustomizeAccount = () => {
 
   const auth = getAuth();
   const db = getFirestore();
-  const storage = getStorage();
   const user = auth.currentUser;
+
+  // Cloudinary config
+  const CLOUDINARY_CLOUD_NAME = 'dqndurz00';
+  const CLOUDINARY_UPLOAD_PRESET = 'gradeeval'; // must be set to "unsigned" in Cloudinary console
 
   useEffect(() => {
     if (user) {
@@ -103,15 +107,23 @@ const CustomizeAccount = () => {
     setError('');
     try {
       let profilePictureUrl = userData.profilePicture;
+
       if (profilePictureFile) {
-        const storageRef = ref(storage, `profilePictures/${user.uid}`);
-        await uploadBytes(storageRef, profilePictureFile);
-        profilePictureUrl = await getDownloadURL(storageRef);
+        // Upload to Cloudinary using unsigned upload preset
+        const formData = new FormData();
+        formData.append('file', profilePictureFile);
+        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+        formData.append('folder', 'profilePictures');
+
+        const cloudinaryRes = await fetch(
+          `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+          { method: 'POST', body: formData }
+        );
+        if (!cloudinaryRes.ok) throw new Error('Cloudinary upload failed.');
+        const cloudinaryData = await cloudinaryRes.json();
+        profilePictureUrl = cloudinaryData.secure_url;
       }
-      if (profilePictureUrl && profilePictureUrl.length > 2048) {
-        setError('Photo URL is too long. Please use a smaller image.');
-        return;
-      }
+
       await updateDoc(doc(db, 'users', user.uid), {
         firstName: userData.firstName,
         middleName: userData.middleName,
@@ -127,9 +139,11 @@ const CustomizeAccount = () => {
         displayName: `${userData.firstName} ${userData.lastName}`,
         photoURL: profilePictureUrl || null,
       });
+      sileo.success({ title: 'Profile Updated!', description: 'Your student information has been saved successfully.' });
       setIsModalOpen(true);
     } catch (err) {
       setError('Failed to update profile. Please try again.');
+      sileo.error({ title: 'Update Failed', description: 'Could not save your profile. Please try again.' });
       console.error(err);
     } finally {
       setLoading(false);

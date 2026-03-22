@@ -1,3 +1,8 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Sileo toast: force description text to white on dark background */
+.sileo-desc-white {
+  color: rgba(255, 255, 255, 0.80) !important;
+}

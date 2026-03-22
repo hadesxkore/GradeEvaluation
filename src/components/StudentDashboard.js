@@ -209,12 +209,21 @@ const StudentDashboard = () => {
       {/* Brand / Logo */}
       <div className="px-5 pt-7 pb-6">
         <div className="flex items-center gap-3">
-          <span className="w-8 h-8 rounded-lg bg-violet-500 flex items-center justify-center shadow-lg">
-            <HiOutlineAcademicCap className="text-white text-lg" />
-          </span>
+          {/* Profile picture or initials avatar */}
+          {profilePictureUrl ? (
+            <img
+              src={profilePictureUrl}
+              alt="Profile"
+              className="w-10 h-10 rounded-full object-cover flex-shrink-0 ring-2 ring-violet-400/50 shadow-lg"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-400 to-indigo-500 flex items-center justify-center text-sm font-bold text-white flex-shrink-0 shadow-lg ring-2 ring-violet-400/30">
+              {getInitials(firstName)}
+            </div>
+          )}
           <div>
-            <p className="text-white text-sm font-semibold leading-none">Student</p>
-            <p className="text-indigo-400 text-xs mt-0.5">Portal</p>
+            <p className="text-white text-sm font-semibold leading-none">{firstName}</p>
+            <p className="text-indigo-400 text-xs mt-0.5">Student Portal</p>
           </div>
         </div>
       </div>

@@ -3,7 +3,7 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getAnalytics } from "firebase/analytics";
-import { getStorage } from "firebase/storage";
+// Firebase Storage removed — using Cloudinary instead
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -21,6 +21,6 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const analytics = getAnalytics(app);
-const storage = getStorage(app);
+// const storage = getStorage(app); // Removed — using Cloudinary
 
-export { auth, db , storage};
+export { auth, db };
