@@ -81,6 +81,15 @@ const UploadGrades = () => {
             return;
         }
 
+        // Guard: year level must be set in Student Information before uploading grades
+        if (!yearLevel) {
+            sileo.warning({
+                title: 'Year Level Not Set',
+                description: 'Please set your Year Level in the Student Information page before uploading your grades.',
+            });
+            return;
+        }
+
         // Show the modal for uploading grades
         setShowModal(true);
     };
@@ -265,6 +274,13 @@ const UploadGrades = () => {
     };
 
     const handleViewCoursesToEnroll = async () => {
+        // DEBUG — remove after fix confirmed
+        console.log('handleViewCoursesToEnroll called | yearLevel:', yearLevel, '| uid:', currentUser?.uid);
+
+        // Close any open modal first so the Sileo toast isn't hidden behind the backdrop
+        setShowSuccessModal(false);
+        setShowModal(false);
+
         const failedCourses = grades
             .filter(grade => grade.status === 'FAILED')
             .map(grade => grade.courseCode.trim());
@@ -287,12 +303,22 @@ const UploadGrades = () => {
             } else if (secondSemesterDoc.exists()) {
                 currentSemester = 'secondSemester';
             } else {
-                console.warn("No grades found for the user.");
+                // 4th year students may have no active semester doc (all archived)
+                if (yearLevel === '4th year') {
+                    sileo.success({
+                        title: '🎓 Congratulations!',
+                        description: "You've completed all your subjects. No more courses to enroll in.",
+                    });
+                } else {
+                    sileo.warning({
+                        title: 'No Grades Yet',
+                        description: 'Please upload your grades first before viewing courses to enroll.',
+                    });
+                }
                 return;
             }
 
-            console.log(`Current Semester: ${currentSemester}`);
-            console.log(`Current Year Level: ${yearLevel}`);
+
 
             // Logic to determine the next semester
             if (yearLevel === "1st year") {
@@ -314,21 +340,30 @@ const UploadGrades = () => {
                     nextSemesterCollection = "subjects/4thYear/firstSemester";
                 }
             } else if (yearLevel === "4th year") {
-                console.warn("You've completed all subjects.");
+                sileo.success({
+                    title: '🎓 Congratulations!',
+                    description: "You've completed all your subjects. No more courses to enroll in.",
+                });
                 return;
             } else {
-                console.warn("Unknown year level. No courses will be fetched.");
+                sileo.error({
+                    title: 'Unknown Year Level',
+                    description: 'Your year level is not recognized. Please update your Student Information page.',
+                });
                 return;
             }
 
-            console.log(`Fetching courses from: ${nextSemesterCollection}`);
+
 
             // Fetch the courses from the next semester collection
             const semesterRef = collection(db, nextSemesterCollection);
             const querySnapshot = await getDocs(semesterRef);
 
             if (querySnapshot.empty) {
-                console.warn("No courses found in the collection.");
+                sileo.info({
+                    title: 'No Courses Available',
+                    description: 'No subjects were found for your next semester. Contact your evaluator for assistance.',
+                });
                 return;
             }
 
@@ -439,6 +474,10 @@ const UploadGrades = () => {
             }
         } catch (error) {
             console.error('Error fetching courses to enroll:', error);
+            sileo.error({
+                title: 'Something Went Wrong',
+                description: error?.message || 'Could not load courses. Please try again.',
+            });
         }
     };
 

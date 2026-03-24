@@ -6,3 +6,8 @@
 .sileo-desc-white {
   color: rgba(255, 255, 255, 0.80) !important;
 }
+
+/* Force Sileo toasts above all modals (Sileo hardcodes z-index:50, same as Tailwind z-50) */
+[data-sileo-viewport] {
+  z-index: 99999 !important;
+}
