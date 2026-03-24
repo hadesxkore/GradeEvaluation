@@ -17,6 +17,7 @@ import {
 import Modal from 'react-modal';
 import { db } from '../firebase';
 import { collection, query, where, getDocs, doc, getDoc, addDoc, updateDoc } from 'firebase/firestore';
+import { sileo } from 'sileo';
 
 Modal.setAppElement('#root');
 
@@ -103,7 +104,8 @@ const ViewEvaluationCert = ({ viewCourses }) => {
   };
 
   const printEvaluationCert = () => {
-    window.open('https://firebasestorage.googleapis.com/v0/b/gradeeval.appspot.com/o/ROF-042%20Course%20Assessment%20Fillable%20Form%20(1).pdf?alt=media&token=cce7068a-4ea4-4231-b8fe-01004d127dd4', '_blank');
+    const ROF042_URL = 'https://res.cloudinary.com/dqndurz00/raw/upload/v1774317787/forms/e0iyemedapvyjkp5gygs.pdf';
+    window.open(ROF042_URL, '_blank');
   };
 
   const handleSemesterSelection = (semester) => {
@@ -121,25 +123,17 @@ const ViewEvaluationCert = ({ viewCourses }) => {
       if (studentDocSnapshot.exists()) {
         const existingCourses = studentDocSnapshot.data().eligibleCourses || [];
         if (existingCourses.some(c => c.id === course.id)) {
-          setModalMessage("This course has already been added to the student's enrollment.");
-          setModalType('warning');
-          setIsModalOpen(true);
+          sileo.warning({ title: 'Already Added', description: "This course has already been added to the student's enrollment." });
         } else {
           existingCourses.push(course);
           await updateDoc(studentDocRef, { eligibleCourses: existingCourses });
-          setModalMessage("Course successfully added to the student's enrollment!");
-          setModalType('success');
-          setIsModalOpen(true);
+          sileo.success({ title: 'Course Added!', description: "Course successfully added to the student's enrollment." });
         }
       } else {
-        setModalMessage('Student document not found.');
-        setModalType('error');
-        setIsModalOpen(true);
+        sileo.error({ title: 'Not Found', description: 'Student document not found.' });
       }
     } catch (error) {
-      setModalMessage('Error adding course. Please try again.');
-      setModalType('error');
-      setIsModalOpen(true);
+      sileo.error({ title: 'Error', description: 'Error adding course. Please try again.' });
     }
   };
 
@@ -173,7 +167,7 @@ const ViewEvaluationCert = ({ viewCourses }) => {
       } else {
         setGrades([]);
       }
-    } catch (error) { alert("An error occurred."); }
+    } catch (error) { sileo.error({ title: 'Error', description: 'An error occurred fetching records.' }); }
     finally { setLoadingGrades(false); }
   };
 
@@ -200,7 +194,7 @@ const ViewEvaluationCert = ({ viewCourses }) => {
       }
       setGrades(allGradesData);
       setIsGradesModalOpen(true);
-    } catch (error) { alert("An error occurred."); }
+    } catch (error) { sileo.error({ title: 'Error', description: 'An error occurred fetching grades.' }); }
     finally { setLoadingGrades(false); }
   };
 
@@ -248,7 +242,7 @@ const ViewEvaluationCert = ({ viewCourses }) => {
             hoursPerSemester: c.hoursPerSemester, hoursPerWeek: c.hoursPerWeek,
             units: c.units, excludedCourses: c.excludedCourses, id: c.id
           })));
-        } else { setCourseFiles([]); alert('No courses found.'); }
+        } else { setCourseFiles([]); sileo.info({ title: 'No Courses', description: 'No courses found for this student.' }); }
 
         const excDoc = await getDoc(doc(db, 'excludedCourses', student.id));
         if (excDoc.exists() && excDoc.data().excludedCourses?.length > 0) {
@@ -256,18 +250,18 @@ const ViewEvaluationCert = ({ viewCourses }) => {
         } else { setExcludedCourses([]); }
 
         setIsCourseFilesModalOpen(true);
-      } else { alert('Student document not found.'); }
+      } else { sileo.error({ title: 'Not Found', description: 'Student document not found.' }); }
     } catch (e) { console.error(e); }
     setLoadingCourseFiles(false);
   };
 
   const sendNotification = async (studentId) => {
-    if (!notificationMessage.trim()) return alert('Please enter a message.');
+    if (!notificationMessage.trim()) return sileo.warning({ title: 'Empty Message', description: 'Please enter a message before sending.' });
     try {
       await addDoc(collection(db, 'notifications'), { studentId, message: notificationMessage, timestamp: new Date() });
-      alert('Notification sent!');
+      sileo.success({ title: 'Notification Sent!', description: 'The student will receive your message.' });
       setNotificationModalOpen(false); setNotificationMessage(''); setSelectedStudent(null);
-    } catch (e) { alert('Failed.'); }
+    } catch (e) { sileo.error({ title: 'Failed', description: 'Could not send the notification. Try again.' }); }
   };
 
   /* ─── UI COMPONENTS ─── */
