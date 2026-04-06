@@ -13,31 +13,49 @@ import {
     HiOutlineClipboardList,
 } from 'react-icons/hi';
 
-/* ── year-level config ── */
-const YEAR_CONFIG = [
-    { label: '1st Year', short: 'Y1', color: 'bg-indigo-500' },
-    { label: '2nd Year', short: 'Y2', color: 'bg-violet-500' },
-    { label: '3rd Year', short: 'Y3', color: 'bg-purple-500' },
-    { label: '4th Year', short: 'Y4', color: 'bg-fuchsia-500' },
+/* ── year-level config (supports up to 7 years for shifters) ── */
+const YEAR_COLORS = [
+    'bg-indigo-500', 'bg-violet-500', 'bg-purple-500',
+    'bg-fuchsia-500', 'bg-pink-500', 'bg-rose-500', 'bg-orange-500',
 ];
 
 const YEAR_ORDER = ['1st year', '2nd year', '3rd year', '4th year'];
 
-function getRemainingYears(yearLevel) {
-    const idx = YEAR_ORDER.findIndex(
-        (y) => y.toLowerCase() === (yearLevel || '').toLowerCase()
-    );
-    if (idx === -1) return null;
-    return YEAR_ORDER.length - 1 - idx; // e.g. 3rd year → 1 remaining
+// Build a config array for n total years
+function buildYearConfig(totalYears) {
+    return Array.from({ length: totalYears }, (_, i) => ({
+        label: `${i + 1}${['st','nd','rd'][i] || 'th'} Year`,
+        short: `Y${i + 1}`,
+        color: YEAR_COLORS[i] || 'bg-slate-500',
+    }));
 }
 
-function getProgressPct(yearLevel) {
-    const idx = YEAR_ORDER.findIndex(
+function getCurrentYearIdx(yearLevel) {
+    return YEAR_ORDER.findIndex(
         (y) => y.toLowerCase() === (yearLevel || '').toLowerCase()
     );
+}
+
+// yearsRemaining: how many years left (from Firestore) or computed from yearLevel
+function getTotalYears(yearLevel, yearsRemainingField) {
+    const idx = getCurrentYearIdx(yearLevel);
+    if (idx === -1) return 4; // default
+    const yearsCompleted = idx + 1; // e.g. 2nd year = 2 years completed
+    if (yearsRemainingField != null) return yearsCompleted + Number(yearsRemainingField);
+    return 4; // default for regular students
+}
+
+function getRemainingYears(yearLevel, yearsRemainingField) {
+    const idx = getCurrentYearIdx(yearLevel);
+    if (idx === -1) return null;
+    if (yearsRemainingField != null) return Number(yearsRemainingField);
+    return 4 - 1 - idx; // regular student: 4-year fixed
+}
+
+function getProgressPct(yearLevel, totalYears) {
+    const idx = getCurrentYearIdx(yearLevel);
     if (idx === -1) return 0;
-    // 1st=25%, 2nd=50%, 3rd=75%, 4th=100%
-    return ((idx + 1) / YEAR_ORDER.length) * 100;
+    return ((idx + 1) / totalYears) * 100;
 }
 
 /* ── stat card ── */
@@ -88,17 +106,21 @@ const AnalyzeResidency = () => {
         );
     }
 
-    const yearLevel = userData?.yearLevel || '';
-    const firstName = userData?.firstName || 'Student';
-    const lastName = userData?.lastName || '';
-    const program = userData?.program || 'N/A';
-    const studentId = userData?.studentId || '—';
-    const profilePic = userData?.profilePicture || '';
-    const remainingYears = getRemainingYears(yearLevel);
-    const progressPct = getProgressPct(yearLevel);
-    const currentYearIdx = YEAR_ORDER.findIndex(
-        (y) => y.toLowerCase() === yearLevel.toLowerCase()
-    );
+    const yearLevel        = userData?.yearLevel || '';
+    const firstName        = userData?.firstName || 'Student';
+    const lastName         = userData?.lastName || '';
+    const program          = userData?.program || 'N/A';
+    const studentId        = userData?.studentId || '—';
+    const profilePic       = userData?.profilePicture || '';
+    const irregularityReason = userData?.irregularityReason || '';
+    // yearsRemaining from Firestore (set by UploadStudentMasterlist for irregular/shifter students)
+    const yearsRemainingField = userData?.yearsRemaining ?? null;
+    const remainingYears   = getRemainingYears(yearLevel, yearsRemainingField);
+    const totalYears       = getTotalYears(yearLevel, yearsRemainingField);
+    const progressPct      = getProgressPct(yearLevel, totalYears);
+    const currentYearIdx   = getCurrentYearIdx(yearLevel);
+    const yearConfig       = buildYearConfig(totalYears);
+    const isIrregular      = totalYears > 4 || !!irregularityReason;
 
     const getInitials = () =>
         ((firstName[0] || '') + (lastName[0] || '')).toUpperCase() || 'ST';
@@ -206,22 +228,40 @@ const AnalyzeResidency = () => {
                     Academic Year Timeline
                 </h3>
 
-                <div className="relative">
-                    {/* Connector line */}
-                    <div className="absolute top-5 left-5 right-5 h-0.5 bg-slate-200" style={{ marginLeft: '2.25rem', marginRight: '2.25rem' }} />
+                {/* Irregular/Shifter notice */}
+                {isIrregular && (
+                    <div className="mb-5 flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                        <span className="text-xl mt-0.5">⚠️</span>
+                        <div>
+                            <p className="text-sm font-semibold text-amber-800">
+                                {irregularityReason === 'Shifter' ? 'Shifter Student' : 'Irregular Student'}
+                            </p>
+                            <p className="text-xs text-amber-700 mt-0.5">
+                                {irregularityReason
+                                    ? `Reason: ${irregularityReason}. `
+                                    : ''}
+                                Your timeline has been extended to {totalYears} years based on your academic record.
+                            </p>
+                        </div>
+                    </div>
+                )}
 
-                    <div className="flex items-start justify-between relative z-10">
-                        {YEAR_CONFIG.map((yr, idx) => {
-                            const isDone = idx < currentYearIdx;
+                <div className="relative overflow-x-auto">
+                    {/* Connector line */}
+                    <div className="absolute top-5 h-0.5 bg-slate-200" style={{ left: '2.5rem', right: '2.5rem' }} />
+
+                    <div className="flex items-start justify-between relative z-10 min-w-max gap-2">
+                        {yearConfig.map((yr, idx) => {
+                            const isDone    = idx < currentYearIdx;
                             const isCurrent = idx === currentYearIdx;
                             const isPending = idx > currentYearIdx;
 
                             return (
-                                <div key={idx} className="flex flex-col items-center flex-1">
+                                <div key={idx} className="flex flex-col items-center" style={{ minWidth: '64px' }}>
                                     {/* Circle */}
                                     <div
                                         className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shadow-sm mb-3 transition-all
-                      ${isDone ? 'bg-teal-500 text-white ring-4 ring-teal-100' : ''}
+                      ${isDone    ? 'bg-teal-500 text-white ring-4 ring-teal-100' : ''}
                       ${isCurrent ? `${yr.color} text-white ring-4 ring-violet-100 scale-110` : ''}
                       ${isPending ? 'bg-slate-100 text-slate-400 border-2 border-slate-200' : ''}
                     `}
@@ -307,10 +347,18 @@ const AnalyzeResidency = () => {
                                 { label: 'Year Level', value: yearLevel || '—', icon: HiOutlineCalendar },
                                 {
                                     label: 'Years Remaining',
-                                    value: remainingYears !== null ? `${remainingYears} year${remainingYears !== 1 ? 's' : ''} until graduation` : '—',
+                                    value: remainingYears !== null
+                                        ? `${remainingYears} year${remainingYears !== 1 ? 's' : ''} until graduation`
+                                        : '—',
                                     icon: HiOutlineClock,
                                     highlight: remainingYears === 0,
                                 },
+                                ...(isIrregular ? [{
+                                    label: 'Student Type',
+                                    value: irregularityReason || 'Irregular',
+                                    icon: HiOutlineUser,
+                                    highlight: false,
+                                }] : []),
                             ].map((row) => {
                                 const Icon = row.icon;
                                 return (

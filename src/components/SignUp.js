@@ -93,14 +93,8 @@ const SignUp = () => {
         irregularityReason: irregularityReason,
       });
 
-      // Email verification is temporarily disabled — re-enable when needed:
-      // await user.reload();
-      // const refreshedUser = auth.currentUser;
-      // if (refreshedUser) {
-      //   await sendEmailVerification(refreshedUser);
-      // } else {
-      //   throw new Error('Unable to refresh user object for verification.');
-      // }
+      // Send verification email to the student's BPSU email
+      await sendEmailVerification(user);
 
       setIsReasonModalOpen(false);
       setIsSignUpFormVisible(false);
@@ -352,16 +346,20 @@ const SignUp = () => {
         </div>
       )}
 
-      {/* Sign-up Complete Modal (Verification disabled) */}
+      {/* Sign-up Complete Modal — Email Verification Sent */}
       {isModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-slate-900/50 backdrop-blur-sm px-4">
           <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-sm text-center animate-fade-in">
             <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-5">
-              <HiCheckCircle className="text-3xl text-teal-600" />
+              <HiOutlineMail className="text-3xl text-teal-600" />
             </div>
-            <h2 className="text-2xl font-bold text-slate-800 mb-2">Account Created!</h2>
-            <p className="text-sm text-slate-500 mb-6">
-              Your student account has been created successfully. You can now log in.
+            <h2 className="text-2xl font-bold text-slate-800 mb-2">Check Your Email!</h2>
+            <p className="text-sm text-slate-500 mb-2">
+              A verification link has been sent to:
+            </p>
+            <p className="text-sm font-semibold text-slate-800 bg-slate-100 rounded-lg px-3 py-2 mb-6 break-all">{email}</p>
+            <p className="text-xs text-slate-400 mb-6">
+              You must verify your email before you can log in. Check your inbox (and spam folder) and click the link.
             </p>
             <button onClick={() => navigate('/login')} className="w-full bg-slate-900 hover:bg-teal-700 text-white font-semibold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2">
               Go to Login <HiArrowRight />

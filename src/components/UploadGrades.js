@@ -12,23 +12,25 @@ const UploadGrades = () => {
     const [showViewGradesModal, setShowViewGradesModal] = useState(false);
     const [showSubjectsModal, setShowSubjectsModal] = useState(false);
     const [subjects, setSubjects] = useState([]);
-    const [showSuccessModal, setShowSuccessModal] = useState(false); // State for success modal
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [selectedSemester, setSelectedSemester] = useState('');
     const [yearLevel, setYearLevel] = useState('');
+    const [irregularityReason, setIrregularityReason] = useState('');
     const [loading, setLoading] = useState(true);
-    const [selectedFile, setSelectedFile] = useState(null); // At the top of your component
+    const [selectedFile, setSelectedFile] = useState(null);
     const [currentUser, setCurrentUser] = useState(null);
-    const [isLoading, setIsLoading] = useState(false); // State for loading indicator
-    const [grades, setGrades] = useState([]); // State for storing uploaded grades
+    const [isLoading, setIsLoading] = useState(false);
+    const [isFetchingCourses, setIsFetchingCourses] = useState(false);
+    const [grades, setGrades] = useState([]);
     const [showEnrollCoursesModal, setShowEnrollCoursesModal] = useState(false);
-    const [coursesToEnroll, setCoursesToEnroll] = useState([]); // State for eligible courses
-    const [fileUrl, setFileUrl] = useState(''); // State for storing the file URL
+    const [coursesToEnroll, setCoursesToEnroll] = useState([]);
+    const [fileUrl, setFileUrl] = useState('');
     const [showUploadMessageModal, setShowUploadMessageModal] = useState(false);
-    const [excludedCourses, setExcludedCourses] = useState([]); // Declare state for excluded courses
-    const [showExcludedCoursesModal, setShowExcludedCoursesModal] = useState(false); // State for excluded courses modal
+    const [excludedCourses, setExcludedCourses] = useState([]);
+    const [showExcludedCoursesModal, setShowExcludedCoursesModal] = useState(false);
     const [selectedCourseGrade, setSelectedCourseGrade] = useState(null);
     const [showGradeModal, setShowGradeModal] = useState(false);
-    const [isDataUpdated, setIsDataUpdated] = useState(false); // Track if data was updated
+    const [isDataUpdated, setIsDataUpdated] = useState(false);
     const [modalMessage, setModalMessage] = useState('');
     const [showModalMessage, setShowModalMessage] = useState(false);
 
@@ -59,8 +61,8 @@ const UploadGrades = () => {
 
                 if (userDoc.exists()) {
                     const userData = userDoc.data();
-                    const level = userData.yearLevel;
-                    setYearLevel(level);
+                    setYearLevel(userData.yearLevel || '');
+                    setIrregularityReason(userData.irregularityReason || '');
                 } else {
                     console.error('User document not found in Firestore.');
                 }
@@ -274,205 +276,197 @@ const UploadGrades = () => {
     };
 
     const handleViewCoursesToEnroll = async () => {
-        // DEBUG — remove after fix confirmed
-        console.log('handleViewCoursesToEnroll called | yearLevel:', yearLevel, '| uid:', currentUser?.uid);
-
         // Close any open modal first so the Sileo toast isn't hidden behind the backdrop
         setShowSuccessModal(false);
         setShowModal(false);
+        setShowViewGradesModal(false);
 
-        const failedCourses = grades
-            .filter(grade => grade.status === 'FAILED')
-            .map(grade => grade.courseCode.trim());
+        if (!currentUser?.uid) return;
+
+        setIsFetchingCourses(true);
 
         try {
-            // Define document references for first and second semester grades
-            const firstSemesterDocRef = doc(collection(db, 'grades', currentUser.uid, yearLevel), 'firstSemester');
-            const secondSemesterDocRef = doc(collection(db, 'grades', currentUser.uid, yearLevel), 'secondSemester');
+            // ─────────────────────────────────────────────────────────────────
+            // STEP 1 — Fetch ALL subjects from every year/semester collection
+            // ─────────────────────────────────────────────────────────────────
+            const ALL_YEARS = ['1stYear', '2ndYear', '3rdYear', '4thYear'];
+            const ALL_SEMS  = ['firstSemester', 'secondSemester'];
+            const allSubjects = [];
 
-            // Get the documents for first and second semester
-            const firstSemesterDoc = await getDoc(firstSemesterDocRef);
-            const secondSemesterDoc = await getDoc(secondSemesterDocRef);
+            for (const yr of ALL_YEARS) {
+                for (const sem of ALL_SEMS) {
+                    const snap = await getDocs(collection(db, 'subjects', yr, sem));
+                    snap.docs.forEach(d => {
+                        const s = d.data();
+                        const code = (s.courseCode ?? '').trim();
+                        // De-duplicate by courseCode (handles duplicate Firestore docs)
+                        if (code && !allSubjects.find(x => x.courseCode === code)) {
+                            allSubjects.push({
+                                id: d.id, year: yr, sem,
+                                courseCode:       code,
+                                courseTitle:      (s.courseTitle  ?? '').trim(),
+                                preRequisite:     (s.preRequisite ?? '').trim(),
+                                coRequisite:      (s.coRequisite  ?? '').trim(),
+                                units:            s.units            || { lec: 0, lab: 0, total: 0 },
+                                hoursPerWeek:     s.hoursPerWeek     || { lec: 0, lab: 0, total: 0 },
+                                hoursPerSemester: s.hoursPerSemester || { lec: 0, lab: 0, total: 0 },
+                            });
+                        }
+                    });
+                }
+            }
 
-            let currentSemester;
-            let nextSemesterCollection;
+            if (allSubjects.length === 0) {
+                sileo.info({ title: 'No Curriculum Found', description: 'No subjects are in the system yet. Contact your evaluator.' });
+                return;
+            }
 
-            // Determine the current semester based on uploaded grades
-            if (firstSemesterDoc.exists()) {
-                currentSemester = 'firstSemester';
-            } else if (secondSemesterDoc.exists()) {
-                currentSemester = 'secondSemester';
+            // ─────────────────────────────────────────────────────────────────
+            // STEP 1b — Smart year-level filter
+            //   Regular / Failed-Irregular: show current year (retakes) + next year
+            //   Shifter: show ALL years (they may have credits from another school)
+            //   4th year: show only 4th year remaining
+            // ─────────────────────────────────────────────────────────────────
+            const YEAR_PROGRESSION = ['1stYear', '2ndYear', '3rdYear', '4thYear'];
+            const YL_TO_KEY = {
+                '1st year': '1stYear', '2nd year': '2ndYear',
+                '3rd year': '3rdYear', '4th year': '4thYear',
+            };
+            const currentYearKey = YL_TO_KEY[yearLevel?.toLowerCase()] || null;
+            const currentYearIdx = YEAR_PROGRESSION.indexOf(currentYearKey);
+            const isShifter = irregularityReason === 'Shifter';
+
+            // Determine which year buckets to include
+            const allowedYears = new Set();
+            if (isShifter || currentYearKey === null) {
+                // Shifters see all years
+                YEAR_PROGRESSION.forEach(y => allowedYears.add(y));
             } else {
-                // 4th year students may have no active semester doc (all archived)
-                if (yearLevel === '4th year') {
-                    sileo.success({
-                        title: '🎓 Congratulations!',
-                        description: "You've completed all your subjects. No more courses to enroll in.",
-                    });
-                } else {
-                    sileo.warning({
-                        title: 'No Grades Yet',
-                        description: 'Please upload your grades first before viewing courses to enroll.',
-                    });
+                // Always include current year (retakes of failed/incomplete subjects)
+                allowedYears.add(currentYearKey);
+                // And the next year (if not already at 4th year)
+                if (currentYearIdx + 1 < YEAR_PROGRESSION.length) {
+                    allowedYears.add(YEAR_PROGRESSION[currentYearIdx + 1]);
                 }
-                return;
             }
 
+            const filteredSubjects = allSubjects.filter(s => allowedYears.has(s.year));
 
+            // ─────────────────────────────────────────────────────────────────
+            // STEP 2 — Build the student's complete pass history
+            //   Reads from:
+            //     grades/{uid}/{yearLabel}/{sem}            (active)
+            //     archivedGrades/{uid}/{yearLabel}/{sem}    (archived)
+            // ─────────────────────────────────────────────────────────────────
+            const passedCodes = new Set();
 
-            // Logic to determine the next semester
-            if (yearLevel === "1st year") {
-                if (currentSemester === 'firstSemester') {
-                    nextSemesterCollection = "subjects/1stYear/secondSemester";
-                } else if (currentSemester === 'secondSemester') {
-                    nextSemesterCollection = "subjects/2ndYear/firstSemester";
-                }
-            } else if (yearLevel === "2nd year") {
-                if (currentSemester === 'firstSemester') {
-                    nextSemesterCollection = "subjects/2ndYear/secondSemester";
-                } else if (currentSemester === 'secondSemester') {
-                    nextSemesterCollection = "subjects/3rdYear/firstSemester";
-                }
-            } else if (yearLevel === "3rd year") {
-                if (currentSemester === 'firstSemester') {
-                    nextSemesterCollection = "subjects/3rdYear/secondSemester";
-                } else if (currentSemester === 'secondSemester') {
-                    nextSemesterCollection = "subjects/4thYear/firstSemester";
-                }
-            } else if (yearLevel === "4th year") {
-                sileo.success({
-                    title: '🎓 Congratulations!',
-                    description: "You've completed all your subjects. No more courses to enroll in.",
+            const collectFromSnap = (snap) => {
+                if (!snap.exists()) return;
+                (snap.data().grades || []).forEach(g => {
+                    const code = (g.courseCode ?? '').trim();
+                    if (code && g.status === 'PASSED') passedCodes.add(code);
                 });
-                return;
-            } else {
-                sileo.error({
-                    title: 'Unknown Year Level',
-                    description: 'Your year level is not recognized. Please update your Student Information page.',
-                });
-                return;
+            };
+
+            const YR_LABELS = {
+                '1stYear': '1st year',
+                '2ndYear': '2nd year',
+                '3rdYear': '3rd year',
+                '4thYear': '4th year',
+            };
+
+            for (const yr of ALL_YEARS) {
+                const label = YR_LABELS[yr];
+                for (const sem of ALL_SEMS) {
+                    try {
+                        collectFromSnap(await getDoc(doc(db, 'grades', currentUser.uid, label, sem)));
+                    } catch (_) {}
+                    try {
+                        collectFromSnap(await getDoc(doc(db, 'archivedGrades', currentUser.uid, label, sem)));
+                    } catch (_) {}
+                }
             }
 
+            // ─────────────────────────────────────────────────────────────────
+            // STEP 3 — Compute Year Standing
+            //   2nd Year Standing = student has passed ALL 1st-year subjects
+            //   3rd Year Standing = student has passed ALL 2nd-year subjects
+            //   4th Year Standing = student has passed ALL 3rd-year subjects
+            // ─────────────────────────────────────────────────────────────────
+            const codesFor = (yr) => allSubjects.filter(s => s.year === yr).map(s => s.courseCode);
+            const has2nd = codesFor('1stYear').every(c => passedCodes.has(c));
+            const has3rd = has2nd && codesFor('2ndYear').every(c => passedCodes.has(c));
+            const has4th = has3rd && codesFor('3rdYear').every(c => passedCodes.has(c));
 
+            // ─────────────────────────────────────────────────────────────────
+            // STEP 4 — Classify every subject as eligible or excluded
+            // ─────────────────────────────────────────────────────────────────
+            const eligible = [];
+            const excluded = [];
 
-            // Fetch the courses from the next semester collection
-            const semesterRef = collection(db, nextSemesterCollection);
-            const querySnapshot = await getDocs(semesterRef);
+            for (const subj of filteredSubjects) {
+                // Already passed — student doesn't need to retake it
+                if (passedCodes.has(subj.courseCode)) continue;
 
-            if (querySnapshot.empty) {
-                sileo.info({
-                    title: 'No Courses Available',
-                    description: 'No subjects were found for your next semester. Contact your evaluator for assistance.',
-                });
-                return;
-            }
+                // Check if this is a RETAKE (student had grades for it before but didn't pass)
+                // We track this so the UI can label it
+                const isRetake = allSubjects
+                    .filter(s => s.year === currentYearKey)
+                    .some(s => s.courseCode === subj.courseCode);
 
-            const eligibleCourses = [];
-            const excludedCourses = [];
+                let blockingReason = null;
 
-            querySnapshot.forEach(doc => {
-                const course = doc.data();
-                const prerequisites = course.preRequisite ? course.preRequisite.trim().split(",") : [];  // Support for multiple prerequisites
-
-                // Check for "2nd Year Standing", "3rd Year Standing", and "4th Year Standing" prerequisites
-                const hasSecondYearStandingPrerequisite = prerequisites.includes("2nd Year Standing");
-                const hasThirdYearStandingPrerequisite = prerequisites.includes("3rd Year Standing");
-                const hasFourthYearStandingPrerequisite = prerequisites.includes("4th Year Standing");
-
-                // If any of these year standing prerequisites are present and the student has failed any course, exclude the course
-                if ((hasSecondYearStandingPrerequisite || hasThirdYearStandingPrerequisite || hasFourthYearStandingPrerequisite) && failedCourses.length > 0) {
-                    excludedCourses.push({
-                        courseCode: course.courseCode,
-                        courseTitle: course.courseTitle,
-                        preRequisite: prerequisites.join(", ")  // Show all prerequisites
-                    });
-                    console.log(`Excluding course ${course.courseCode} due to failed subject and prerequisite: ${prerequisites.join(", ")}`);
-                } else {
-                    // Check if the student has failed any of the prerequisites
-                    const failedPrerequisites = prerequisites.filter(prerequisite => failedCourses.includes(prerequisite.trim()));
-
-                    if (failedPrerequisites.length > 0) {
-                        excludedCourses.push({
-                            courseCode: course.courseCode,
-                            courseTitle: course.courseTitle,
-                            preRequisite: prerequisites.join(", ")  // Show all prerequisites
-                        });
-                        console.log(`Excluding course ${course.courseCode} due to failed prerequisite(s): ${failedPrerequisites.join(", ")}`);
-                    } else {
-                        eligibleCourses.push({
-                            id: doc.id,
-                            courseCode: course.courseCode,
-                            courseTitle: course.courseTitle,
-                            preRequisite: prerequisites.join(", "),  // Show all prerequisites
-                            units: course.units || { lec: 0, lab: 0, total: 0 },
-                            hoursPerWeek: course.hoursPerWeek || { lec: 0, lab: 0, total: 0 },
-                            hoursPerSemester: course.hoursPerSemester || { lec: 0, lab: 0, total: 0 }
-                        });
+                if (subj.preRequisite) {
+                    const reqs = subj.preRequisite.split(',').map(r => r.trim()).filter(Boolean);
+                    for (const req of reqs) {
+                        if (req === '2nd Year Standing') {
+                            if (!has2nd) { blockingReason = 'Requires 2nd Year Standing (pass all 1st-year subjects first)'; break; }
+                        } else if (req === '3rd Year Standing') {
+                            if (!has3rd) { blockingReason = 'Requires 3rd Year Standing (pass all 2nd-year subjects first)'; break; }
+                        } else if (req === '4th Year Standing') {
+                            if (!has4th) { blockingReason = 'Requires 4th Year Standing (pass all 3rd-year subjects first)'; break; }
+                        } else {
+                            if (!passedCodes.has(req)) { blockingReason = `Missing pre-req: ${req}`; break; }
+                        }
                     }
                 }
-            });
 
-            // Fetch existing data for this student from the coursesToEnrollments collection
-            const coursesRef = doc(collection(db, 'coursesToEnrollments'), currentUser.uid);
-            const coursesDoc = await getDoc(coursesRef);
-
-            if (coursesDoc.exists()) {
-                // Compare existing stored courses with new ones
-                const storedEligibleCourses = coursesDoc.data().eligibleCourses;
-                const storedExcludedCourses = coursesDoc.data().excludedCourses;
-
-                // Normalize courses to remove any differences in order or structure
-                const normalizeCourses = (courses) => {
-                    return courses.map(course => ({
-                        courseCode: course.courseCode,
-                        courseTitle: course.courseTitle,
-                        preRequisite: course.preRequisite
-                    }));
-                };
-
-                const normalizedEligibleCourses = normalizeCourses(eligibleCourses);
-                const normalizedExcludedCourses = normalizeCourses(excludedCourses);
-                const normalizedStoredEligibleCourses = normalizeCourses(storedEligibleCourses);
-                const normalizedStoredExcludedCourses = normalizeCourses(storedExcludedCourses);
-
-                const isCoursesUnchanged = JSON.stringify(normalizedStoredEligibleCourses) === JSON.stringify(normalizedEligibleCourses) &&
-                    JSON.stringify(normalizedStoredExcludedCourses) === JSON.stringify(normalizedExcludedCourses);
-
-                console.log("Courses Unchanged:", isCoursesUnchanged);
-
-                // Always update the state with the fetched courses, even if unchanged
-                setCoursesToEnroll(eligibleCourses);
-                setExcludedCourses(excludedCourses);
-
-                if (isCoursesUnchanged) {
-                    console.log("Courses data is the same as before, enabling button.");
+                if (blockingReason) {
+                    excluded.push({ ...subj, blockingReason, isRetake });
                 } else {
-                    // Show the pop-up message saying courses have already been updated
-                    setShowModalMessage(true); // Show modal with message
-
-                    // Prevent the modal from showing if alert is triggered
-                    setShowEnrollCoursesModal(false); // Ensure the modal does not show
-                    return; // Exit early if the alert is shown
+                    eligible.push({ ...subj, isRetake });
                 }
-                // Show modal to view the courses
-                setShowEnrollCoursesModal(true);
-            } else {
-                // If no previous data exists, store the new courses
-                await setDoc(coursesRef, {
-                    eligibleCourses: eligibleCourses,
-                    excludedCourses: excludedCourses,
-                    timestamp: new Date()
-                }).then(() => {
-                    console.log("Courses to be enrolled successfully stored in Firestore.");
-                    setCoursesToEnroll(eligibleCourses);
-                    setExcludedCourses(excludedCourses);
-                    console.log("Setting showEnrollCoursesModal to true");
-                    setShowEnrollCoursesModal(true);
-                }).catch((error) => {
-                    console.error("Error storing courses in Firestore:", error);
+            }
+
+            // ─────────────────────────────────────────────────────────────────
+            // STEP 5 — Edge cases & open modal
+            // ─────────────────────────────────────────────────────────────────
+            if (eligible.length === 0 && excluded.length === 0) {
+                sileo.success({ title: '🎓 Congratulations!', description: "You've passed every subject in the curriculum. You're ready to graduate!" });
+                return;
+            }
+
+            if (eligible.length === 0) {
+                sileo.warning({
+                    title: 'No Eligible Courses Yet',
+                    description: `${excluded.length} subject(s) still have unmet prerequisites. Check the Excluded list for details.`,
                 });
             }
+
+            // Save to Firestore so evaluator can see
+            await setDoc(doc(db, 'coursesToEnrollments', currentUser.uid), {
+                eligibleCourses: eligible,
+                excludedCourses: excluded,
+                timestamp: new Date(),
+            });
+
+            setCoursesToEnroll(eligible);
+            setExcludedCourses(excluded);
+            setIsFetchingCourses(false);
+            setShowEnrollCoursesModal(true);
+
         } catch (error) {
+            setIsFetchingCourses(false);
             console.error('Error fetching courses to enroll:', error);
             sileo.error({
                 title: 'Something Went Wrong',
@@ -482,36 +476,7 @@ const UploadGrades = () => {
     };
 
 
-    const storeExcludedCourses = async () => {
-        if (excludedCourses.length === 0) {
-            console.log("No excluded courses to store.");
-            return;
-        }
 
-        try {
-            // Define the document reference in the `excludedCourses` collection
-            const excludedCoursesDocRef = doc(db, 'excludedCourses', currentUser.uid);
-
-            // Check if the document already exists
-            const docSnapshot = await getDoc(excludedCoursesDocRef);
-            if (docSnapshot.exists()) {
-                console.log("Excluded courses already stored. Skipping save operation.");
-                return;
-            }
-
-            // Prepare the data to store
-            const data = {
-                excludedCourses: excludedCourses,
-                timestamp: new Date(), // Optional: Add a timestamp for when the data was stored
-            };
-
-            // Store the data in Firestore
-            await setDoc(excludedCoursesDocRef, data);
-            console.log("Excluded courses successfully stored in Firestore.");
-        } catch (error) {
-            console.error("Error storing excluded courses in Firestore:", error);
-        }
-    };
 
 
 
@@ -863,6 +828,39 @@ return (
             </div>
         )}
 
+        {/* ════════════════════ FETCHING COURSES LOADING MODAL ════════════════════ */}
+        {isFetchingCourses && (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
+                <div className="bg-white rounded-2xl shadow-2xl p-8 w-80 flex flex-col items-center gap-5">
+                    {/* Animated rings */}
+                    <div className="relative w-16 h-16">
+                        <div className="absolute inset-0 rounded-full border-4 border-violet-100" />
+                        <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-violet-600 animate-spin" />
+                        <div className="absolute inset-2 rounded-full border-4 border-transparent border-t-fuchsia-400 animate-spin" style={{ animationDuration: '0.6s', animationDirection: 'reverse' }} />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="text-lg">📚</span>
+                        </div>
+                    </div>
+                    <div className="text-center">
+                        <p className="font-bold text-slate-800 text-base">Analyzing Your Curriculum</p>
+                        <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                            Scanning grade history and checking prerequisites across all subjects&hellip;
+                        </p>
+                    </div>
+                    {/* Animated progress dots */}
+                    <div className="flex items-center gap-1.5">
+                        {[0, 1, 2, 3].map(i => (
+                            <div
+                                key={i}
+                                className="w-2 h-2 rounded-full bg-violet-400"
+                                style={{ animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite` }}
+                            />
+                        ))}
+                    </div>
+                </div>
+            </div>
+        )}
+
         {/* ════════════════════ COURSES TO ENROLL MODAL ════════════════════ */}
         {showEnrollCoursesModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm px-4">
@@ -870,7 +868,14 @@ return (
                     <div className="flex items-center justify-between px-7 py-5 border-b border-slate-100">
                         <div>
                             <h3 className="font-bold text-slate-800 text-lg">Eligible Courses for Enrollment</h3>
-                            <p className="text-xs text-slate-500 mt-0.5">{coursesToEnroll.length} course{coursesToEnroll.length !== 1 ? 's' : ''} available for next semester</p>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                                {coursesToEnroll.length} course{coursesToEnroll.length !== 1 ? 's' : ''} eligible
+                                {irregularityReason === 'Shifter'
+                                    ? ' · Showing all years (Shifter)'
+                                    : yearLevel
+                                        ? ` · ${yearLevel} retakes + next year`
+                                        : ' based on your grade history'}
+                            </p>
                         </div>
                         <button onClick={() => setShowEnrollCoursesModal(false)} className="text-slate-400 hover:text-slate-600"><HiOutlineX className="text-xl" /></button>
                     </div>
@@ -893,22 +898,60 @@ return (
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {coursesToEnroll.length > 0 ? coursesToEnroll.map((course, i) => (
-                                    <tr key={i} className="hover:bg-slate-50 transition-colors">
-                                        <td className="py-3 pr-3 font-mono font-semibold text-violet-700 text-xs whitespace-nowrap">{course.courseCode}</td>
-                                        <td className="py-3 pr-3 text-slate-800 font-medium">{course.courseTitle}</td>
-                                        <td className="py-2 text-center text-slate-600 text-xs">{course.units?.lec ?? '—'}</td>
-                                        <td className="py-2 text-center text-slate-600 text-xs">{course.units?.lab ?? '—'}</td>
-                                        <td className="py-2 text-center font-semibold text-slate-800 text-xs">{course.units?.total ?? '—'}</td>
-                                        <td className="py-2 text-center text-slate-600 text-xs">{course.hoursPerWeek?.lec ?? '—'}</td>
-                                        <td className="py-2 text-center text-slate-600 text-xs">{course.hoursPerWeek?.lab ?? '—'}</td>
-                                        <td className="py-2 text-center font-semibold text-slate-800 text-xs">{course.hoursPerWeek?.total ?? '—'}</td>
-                                        <td className="py-2 text-center text-slate-600 text-xs">{course.hoursPerSemester?.lec ?? '—'}</td>
-                                        <td className="py-2 text-center text-slate-600 text-xs">{course.hoursPerSemester?.lab ?? '—'}</td>
-                                        <td className="py-2 text-center font-semibold text-slate-800 text-xs">{course.hoursPerSemester?.total ?? '—'}</td>
-                                        <td className="py-3 text-xs text-slate-500">{course.preRequisite || '—'}</td>
-                                    </tr>
-                                )) : (
+                                {coursesToEnroll.length > 0 ? (() => {
+                                    // Group by year + semester for header rows
+                                    const SEM_LABEL = { firstSemester: '1st Semester', secondSemester: '2nd Semester' };
+                                    const YR_LABEL = {
+                                        '1stYear': '1st Year', '2ndYear': '2nd Year',
+                                        '3rdYear': '3rd Year', '4thYear': '4th Year',
+                                    };
+                                    const rows = [];
+                                    let lastGroup = null;
+                                    // Sort by year index then semester
+                                    const sorted = [...coursesToEnroll].sort((a, b) => {
+                                        const yOrder = ['1stYear','2ndYear','3rdYear','4thYear'];
+                                        const sOrder = ['firstSemester','secondSemester'];
+                                        const yDiff = yOrder.indexOf(a.year) - yOrder.indexOf(b.year);
+                                        return yDiff !== 0 ? yDiff : sOrder.indexOf(a.sem) - sOrder.indexOf(b.sem);
+                                    });
+                                    sorted.forEach((course, i) => {
+                                        const group = `${course.year}|${course.sem}`;
+                                        if (group !== lastGroup) {
+                                            lastGroup = group;
+                                            rows.push(
+                                                <tr key={`hdr-${i}`} className="bg-slate-50">
+                                                    <td colSpan={13} className="py-2 px-3 text-xs font-bold text-violet-700 uppercase tracking-wider">
+                                                        📅 {YR_LABEL[course.year] || course.year} &mdash; {SEM_LABEL[course.sem] || course.sem}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        }
+                                        rows.push(
+                                            <tr key={i} className="hover:bg-slate-50 transition-colors">
+                                                <td className="py-3 pr-3 font-mono font-semibold text-violet-700 text-xs whitespace-nowrap">
+                                                    <span>{course.courseCode}</span>
+                                                    {course.isRetake && (
+                                                        <span className="ml-1.5 inline-block bg-amber-100 text-amber-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full align-middle">
+                                                            🔄 RETAKE
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td className="py-3 pr-3 text-slate-800 font-medium">{course.courseTitle}</td>
+                                                <td className="py-2 text-center text-slate-600 text-xs">{course.units?.lec ?? '—'}</td>
+                                                <td className="py-2 text-center text-slate-600 text-xs">{course.units?.lab ?? '—'}</td>
+                                                <td className="py-2 text-center font-semibold text-slate-800 text-xs">{course.units?.total ?? '—'}</td>
+                                                <td className="py-2 text-center text-slate-600 text-xs">{course.hoursPerWeek?.lec ?? '—'}</td>
+                                                <td className="py-2 text-center text-slate-600 text-xs">{course.hoursPerWeek?.lab ?? '—'}</td>
+                                                <td className="py-2 text-center font-semibold text-slate-800 text-xs">{course.hoursPerWeek?.total ?? '—'}</td>
+                                                <td className="py-2 text-center text-slate-600 text-xs">{course.hoursPerSemester?.lec ?? '—'}</td>
+                                                <td className="py-2 text-center text-slate-600 text-xs">{course.hoursPerSemester?.lab ?? '—'}</td>
+                                                <td className="py-2 text-center font-semibold text-slate-800 text-xs">{course.hoursPerSemester?.total ?? '—'}</td>
+                                                <td className="py-3 text-xs text-slate-500">{course.preRequisite || '—'}</td>
+                                            </tr>
+                                        );
+                                    });
+                                    return rows;
+                                })() : (
                                     <tr><td colSpan={13} className="py-8 text-center text-slate-400 text-sm">No eligible courses based on your current grades.</td></tr>
                                 )}
                             </tbody>
@@ -917,7 +960,7 @@ return (
                     <div className="px-7 py-5 border-t border-slate-100 flex gap-3">
                         <button onClick={() => setShowEnrollCoursesModal(false)} className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200 transition-colors">Close</button>
                         {excludedCourses.length > 0 && (
-                            <button onClick={() => { setShowExcludedCoursesModal(true); storeExcludedCourses(); }} className="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-semibold transition-colors">
+                            <button onClick={() => setShowExcludedCoursesModal(true)} className="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-semibold transition-colors">
                                 View Excluded ({excludedCourses.length})
                             </button>
                         )}
@@ -962,6 +1005,7 @@ return (
                                     <th className="pb-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Code</th>
                                     <th className="pb-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Course Title</th>
                                     <th className="pb-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Pre-Requisite</th>
+                                    <th className="pb-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Reason Blocked</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -969,10 +1013,11 @@ return (
                                     <tr key={i} className="hover:bg-rose-50/50 transition-colors">
                                         <td className="py-3 pr-4 font-mono font-semibold text-rose-700 text-xs">{c.courseCode}</td>
                                         <td className="py-3 pr-4 text-slate-800 font-medium">{c.courseTitle}</td>
-                                        <td className="py-3 text-slate-500 text-xs">{c.preRequisite || '—'}</td>
+                                        <td className="py-3 pr-4 text-slate-500 text-xs">{c.preRequisite || '—'}</td>
+                                        <td className="py-3 text-xs text-amber-700 font-medium">{c.blockingReason || '—'}</td>
                                     </tr>
                                 )) : (
-                                    <tr><td colSpan={3} className="py-8 text-center text-slate-400 text-sm">No excluded courses.</td></tr>
+                                    <tr><td colSpan={4} className="py-8 text-center text-slate-400 text-sm">No excluded courses.</td></tr>
                                 )}
                             </tbody>
                         </table>

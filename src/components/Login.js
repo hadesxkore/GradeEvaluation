@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { auth, db } from '../firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import {
@@ -20,6 +20,10 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendSent, setResendSent] = useState(false);
+  // Keep a ref to the un-verified user so we can resend the email
+  const [unverifiedUser, setUnverifiedUser] = useState(null);
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
@@ -39,8 +43,13 @@ const Login = () => {
         const userRole = userData.role?.toLowerCase();
 
         if (userRole === 'student') {
-          // Email verification check temporarily disabled — re-enable when needed:
-          // if (!user.emailVerified) { setShowVerificationModal(true); return; }
+          // Block login until the student has verified their email
+          if (!user.emailVerified) {
+            setUnverifiedUser(user);
+            setShowVerificationModal(true);
+            await auth.signOut(); // sign them out so they don't slip through
+            return;
+          }
           navigate('/student-dashboard');
         } else if (userRole === 'admin') {
           navigate('/admin-dashboard');
@@ -209,10 +218,41 @@ const Login = () => {
             </div>
             <h2 className="text-xl font-bold text-slate-800 mb-2">Email Not Verified</h2>
             <p className="text-sm text-slate-500 mb-6">
-              Your email address hasn't been verified yet. Please check your inbox and click the verification link to continue.
+              Your email address hasn't been verified yet. Please check your inbox (and spam folder) and click the verification link before logging in.
             </p>
-            <button onClick={() => setShowVerificationModal(false)} className="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3 rounded-xl transition-colors">
-              Understood
+
+            {resendSent ? (
+              <p className="text-sm font-semibold text-teal-600 mb-4">
+                ✓ Verification email resent! Check your inbox.
+              </p>
+            ) : (
+              <button
+                onClick={async () => {
+                  if (!unverifiedUser) return;
+                  setResendLoading(true);
+                  try {
+                    await sendEmailVerification(unverifiedUser);
+                    setResendSent(true);
+                  } catch (e) {
+                    setError('Could not resend email. Try again in a moment.');
+                  } finally {
+                    setResendLoading(false);
+                  }
+                }}
+                disabled={resendLoading}
+                className="w-full mb-3 bg-teal-600 hover:bg-teal-700 disabled:bg-teal-300 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+              >
+                {resendLoading ? (
+                  <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sending...</>
+                ) : '📨 Resend Verification Email'}
+              </button>
+            )}
+
+            <button
+              onClick={() => { setShowVerificationModal(false); setResendSent(false); }}
+              className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 rounded-xl transition-colors"
+            >
+              Close
             </button>
           </div>
         </div>
